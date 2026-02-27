@@ -1,0 +1,27 @@
+# ===== Python (backend) =====
+backend/rainbowEnv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/.env
+backend/rainbow_register.db
+backend/uploads/photos/*
+!backend/uploads/photos/.gitkeep
+
+# ===== Node.js (admin) =====
+admin/node_modules/
+admin/dist/
+admin/.env
+
+# ===== 微信小程序 (miniprogram) =====
+miniprogram/node_modules/
+miniprogram/miniprogram_npm/
+miniprogram/.sourcemap/
+miniprogram/project.config.json
+
+# ===== 通用 =====
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
