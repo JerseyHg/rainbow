@@ -1,73 +1,145 @@
 /**
- * 全局样式
- * 信息登记小程序
+ * 全局样式 — TB报名助手
+ * 统一设计系统：配色、圆角、间距、组件
  */
 
+/* ===== CSS 变量（通过 class 注入） ===== */
 page {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 28rpx;
-  color: #333;
-  background-color: #f5f5f5;
+  color: #1a1a2e;
+  background-color: #f4f6fa;
   box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
 }
 
-.container { padding: 30rpx; min-height: 100vh; }
+/* ===== 容器 ===== */
+.container {
+  padding: 32rpx;
+  min-height: 100vh;
+}
 
+/* ===== 卡片 ===== */
 .card {
-  background: #fff; border-radius: 20rpx; padding: 36rpx;
-  margin-bottom: 24rpx; box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 36rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
 }
 
+/* ===== 主按钮 ===== */
 .btn-primary {
-  background: linear-gradient(135deg, #4A90D9, #5BA0E9);
-  color: #fff; border: none; border-radius: 48rpx;
-  height: 88rpx; line-height: 88rpx;
-  font-size: 32rpx; font-weight: 500; letter-spacing: 2rpx; width: 100%;
+  background: linear-gradient(135deg, #5B8DEF, #7EA6F4);
+  color: #fff;
+  border: none;
+  border-radius: 48rpx;
+  height: 92rpx;
+  line-height: 92rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  width: 100%;
+  box-shadow: 0 8rpx 24rpx rgba(91, 141, 239, 0.3);
 }
-.btn-primary[disabled] { background: #ccc; color: #999; }
+.btn-primary[disabled] {
+  background: #d0d5dd;
+  color: #98a2b3;
+  box-shadow: none;
+}
 .btn-primary::after { border: none; }
 
+/* ===== 次要按钮 ===== */
 .btn-secondary {
-  background: #fff; color: #4A90D9; border: 2rpx solid #4A90D9;
-  border-radius: 48rpx; height: 88rpx; line-height: 84rpx;
-  font-size: 32rpx; font-weight: 500; width: 100%;
+  background: #fff;
+  color: #5B8DEF;
+  border: 2rpx solid #5B8DEF;
+  border-radius: 48rpx;
+  height: 92rpx;
+  line-height: 88rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  width: 100%;
 }
 .btn-secondary::after { border: none; }
 
+/* ===== 表单 ===== */
 .form-group { margin-bottom: 32rpx; }
-.form-label { font-size: 28rpx; color: #666; margin-bottom: 12rpx; display: flex; align-items: center; }
-.form-label .required { color: #4A90D9; margin-right: 4rpx; }
+.form-label {
+  font-size: 28rpx;
+  color: #475467;
+  margin-bottom: 12rpx;
+  display: flex;
+  align-items: center;
+}
+.form-label .required { color: #F04438; margin-right: 4rpx; }
 
 .form-input {
-  background: #f8f8f8; border: 2rpx solid #eee; border-radius: 12rpx;
-  padding: 20rpx 24rpx; font-size: 30rpx; width: 100%; box-sizing: border-box;
+  background: #f9fafb;
+  border: 2rpx solid #eaecf0;
+  border-radius: 14rpx;
+  padding: 20rpx 24rpx;
+  font-size: 30rpx;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
 }
-.form-input-placeholder { color: #bbb; }
+.form-input:focus { border-color: #5B8DEF; }
+.form-input-placeholder { color: #98a2b3; }
 
 .form-textarea {
-  background: #f8f8f8; border: 2rpx solid #eee; border-radius: 12rpx;
-  padding: 20rpx 24rpx; font-size: 30rpx; width: 100%; min-height: 160rpx; box-sizing: border-box;
+  background: #f9fafb;
+  border: 2rpx solid #eaecf0;
+  border-radius: 14rpx;
+  padding: 20rpx 24rpx;
+  font-size: 30rpx;
+  width: 100%;
+  min-height: 160rpx;
+  box-sizing: border-box;
 }
 
+/* ===== 标签 ===== */
 .tag-group { display: flex; flex-wrap: wrap; gap: 16rpx; }
 .tag {
-  padding: 12rpx 28rpx; border-radius: 32rpx; font-size: 26rpx;
-  background: #f5f5f5; color: #666; border: 2rpx solid #eee; transition: all 0.2s;
+  padding: 14rpx 28rpx;
+  border-radius: 32rpx;
+  font-size: 26rpx;
+  background: #f2f4f7;
+  color: #475467;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
 }
-.tag.active { background: rgba(74, 144, 217, 0.1); color: #4A90D9; border-color: #4A90D9; }
+.tag.active {
+  background: rgba(91, 141, 239, 0.1);
+  color: #5B8DEF;
+  border-color: #5B8DEF;
+}
 
-.badge { display: inline-block; padding: 6rpx 18rpx; border-radius: 20rpx; font-size: 24rpx; font-weight: 500; }
-.badge-pending { background: #FFF3E0; color: #F57C00; }
-.badge-approved { background: #E8F5E9; color: #388E3C; }
-.badge-published { background: #E3F2FD; color: #1976D2; }
-.badge-rejected { background: #FFEBEE; color: #D32F2F; }
-.badge-archived { background: #F5F5F5; color: #999; }
+/* ===== 徽章 ===== */
+.badge {
+  display: inline-block;
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+.badge-pending  { background: #FFF6ED; color: #F79009; }
+.badge-approved { background: #ECFDF3; color: #12B76A; }
+.badge-published { background: #EFF8FF; color: #2E90FA; }
+.badge-rejected { background: #FEF3F2; color: #F04438; }
+.badge-archived { background: #F2F4F7; color: #98a2b3; }
 
-.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100rpx 60rpx; }
+/* ===== 空状态 ===== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 60rpx;
+}
 .empty-state .emoji { font-size: 80rpx; margin-bottom: 24rpx; }
-.empty-state .text { font-size: 30rpx; color: #999; text-align: center; }
+.empty-state .text { font-size: 30rpx; color: #98a2b3; text-align: center; }
 
-.divider { height: 1rpx; background: #eee; margin: 24rpx 0; }
-
-.gradient-bg { background: linear-gradient(180deg, #4A90D9 0%, #5BA0E9 100%); }
+/* ===== 分割线 ===== */
+.divider { height: 1rpx; background: #eaecf0; margin: 24rpx 0; }

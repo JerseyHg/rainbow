@@ -22,7 +22,7 @@
       <view class="status-icon-wrap">
         <text class="status-icon">{{statusEmoji}}</text>
       </view>
-      <text class="status-label">{{statusLabel}}</text>
+      <text class="status-main-label">{{statusLabel}}</text>
       <text class="status-desc">{{statusDesc}}</text>
       <view class="serial-badge" wx:if="{{serialNumber}}">
         <text class="serial-label">编号</text>
@@ -30,22 +30,22 @@
       </view>
     </view>
 
-    <!-- 审核中：操作按钮（修改 + 撤回删除） -->
+    <!-- 审核中：操作按钮 -->
     <view class="action-btns" wx:if="{{status === 'pending'}}">
       <button class="btn-edit" bindtap="goEditProfile">修改信息</button>
       <button class="btn-delete" bindtap="onDeleteProfile">撤回并删除</button>
     </view>
 
-    <!-- ★ 审核通过/已发布：操作按钮（删除档案） -->
+    <!-- 审核通过/已发布：删除按钮 -->
     <view class="action-btns" wx:if="{{status === 'approved' || status === 'published'}}">
       <button class="btn-delete" bindtap="onDeleteApprovedProfile">删除我的档案</button>
     </view>
 
-    <!-- 拒绝原因 + 操作按钮 -->
+    <!-- 拒绝原因 -->
     <view class="card reject-card" wx:if="{{status === 'rejected' && rejectionReason}}">
       <view class="reject-header">
         <text class="reject-icon">⚠️</text>
-        <text class="card-title">未通过原因</text>
+        <text class="reject-title">未通过原因</text>
       </view>
       <text class="reject-reason">{{rejectionReason}}</text>
       <view class="reject-actions">

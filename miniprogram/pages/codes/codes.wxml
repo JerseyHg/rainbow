@@ -27,7 +27,6 @@
     <!-- 邀请码列表 -->
     <view class="card" wx:if="{{codes.length > 0}}">
       <text class="card-title">邀请码列表</text>
-
       <view
         class="code-item {{item.is_used ? 'used' : ''}} {{copiedCode === item.code ? 'copied' : ''}}"
         wx:for="{{codes}}"

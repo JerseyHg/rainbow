@@ -16,7 +16,9 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    DATABASE_URL: str = "sqlite:///./rainbow_register.db"
+    # ★ 默认使用 PostgreSQL（生产环境）
+    # 本地开发可在 .env 中改回 sqlite:///./rainbow_register.db
+    DATABASE_URL: str = "postgresql://rainbow:rainbow_prod_2026@shared-postgres:5432/rainbow_prod"
 
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"

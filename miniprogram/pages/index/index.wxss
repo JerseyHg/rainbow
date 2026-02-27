@@ -1,7 +1,7 @@
 .page {
   min-height: 100vh;
-  background: #f5f5f5;
-  padding: 0 36rpx 60rpx;
+  background: linear-gradient(180deg, #f4f6fa 0%, #edf1f8 100%);
+  padding: 0 40rpx 80rpx;
 }
 
 /* ===== 自动登录 ===== */
@@ -10,151 +10,138 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-top: 300rpx;
+  padding-top: 320rpx;
 }
-.auto-login-text {
-  font-size: 30rpx;
-  color: #999;
-  margin-top: 24rpx;
-}
+.auto-login-icon { font-size: 88rpx; margin-bottom: 16rpx; }
+.auto-login-text { font-size: 30rpx; color: #98a2b3; }
 
-/* ===== 顶部 ===== */
-.header {
+/* ===== 顶部品牌 ===== */
+.hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 80rpx 0 50rpx;
+  padding: 100rpx 0 56rpx;
 }
-.emoji { font-size: 80rpx; }
-.title { font-size: 44rpx; font-weight: 700; color: #4A90D9; margin-top: 12rpx; }
-.subtitle { font-size: 26rpx; color: #999; margin-top: 8rpx; }
+.hero-icon { font-size: 88rpx; }
+.hero-title {
+  font-size: 46rpx;
+  font-weight: 800;
+  color: #5B8DEF;
+  margin-top: 16rpx;
+  letter-spacing: 2rpx;
+}
 
-.card {
+/* ===== 邀请码卡片 ===== */
+.invite-card {
   background: #fff;
-  border-radius: 20rpx;
-  padding: 40rpx 32rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
+  border-radius: 28rpx;
+  padding: 44rpx 36rpx;
+  box-shadow: 0 8rpx 32rpx rgba(91, 141, 239, 0.08);
 }
-.label {
+.invite-label {
   display: block;
   text-align: center;
   font-size: 28rpx;
-  color: #666;
+  color: #475467;
   margin-bottom: 28rpx;
+  font-weight: 500;
 }
-.input {
-  border: 2rpx solid #ddd;
-  height: 96rpx;
+.code-input {
+  border: 2rpx solid #eaecf0;
+  height: 100rpx;
   text-align: center;
-  font-size: 44rpx;
-  font-weight: 700;
-  letter-spacing: 20rpx;
-  border-radius: 12rpx;
-  background: #fafafa;
-  margin-bottom: 24rpx;
+  font-size: 48rpx;
+  font-weight: 800;
+  letter-spacing: 24rpx;
+  border-radius: 16rpx;
+  background: #f9fafb;
+  margin-bottom: 28rpx;
+  color: #1a1a2e;
 }
 
-/* ===== 隐私勾选框 ===== */
-.privacy-check-row {
+/* ===== 隐私勾选 ===== */
+.privacy-row {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 28rpx;
-  padding: 0 8rpx;
+  margin-bottom: 32rpx;
+  padding: 0 4rpx;
 }
-
-.checkbox-wrap {
-  padding-top: 4rpx;
-  margin-right: 14rpx;
-  flex-shrink: 0;
-}
-
-.checkbox {
-  width: 36rpx;
-  height: 36rpx;
-  border: 3rpx solid #ccc;
-  border-radius: 6rpx;
+.ck {
+  width: 38rpx;
+  height: 38rpx;
+  border: 2rpx solid #d0d5dd;
+  border-radius: 8rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #fff;
+  margin-right: 14rpx;
+  margin-top: 4rpx;
+  flex-shrink: 0;
   transition: all 0.2s;
 }
-
-.checkbox.checked {
-  background: #4A90D9;
-  border-color: #4A90D9;
+.ck-on {
+  background: #5B8DEF;
+  border-color: #5B8DEF;
 }
-
-.check-icon {
+.ck-icon {
   color: #fff;
   font-size: 24rpx;
   font-weight: 700;
-  line-height: 1;
 }
-
-.privacy-check-text-wrap {
-  flex: 1;
-  line-height: 1.6;
-}
-
-.privacy-check-text {
+.privacy-text-wrap { flex: 1; line-height: 1.6; }
+.privacy-text { font-size: 24rpx; color: #98a2b3; }
+.privacy-link {
   font-size: 24rpx;
-  color: #999;
-}
-
-.privacy-check-link {
-  font-size: 24rpx;
-  color: #4A90D9;
+  color: #5B8DEF;
   text-decoration: underline;
 }
 
-.btn-main {
-  background: linear-gradient(135deg, #4A90D9, #5BA0E9);
+/* ===== 开始按钮 ===== */
+.btn-start {
+  background: linear-gradient(135deg, #5B8DEF, #7EA6F4);
   color: #fff;
   border: none;
   border-radius: 48rpx;
-  height: 88rpx;
-  line-height: 88rpx;
+  height: 92rpx;
+  line-height: 92rpx;
   font-size: 32rpx;
+  font-weight: 600;
+  box-shadow: 0 8rpx 24rpx rgba(91, 141, 239, 0.3);
+}
+.btn-start[disabled] {
+  background: #d0d5dd;
+  color: #98a2b3;
+  box-shadow: none;
+}
+.btn-start::after { border: none; }
+
+/* ===== 提示区域 ===== */
+.hint-box {
+  padding: 32rpx 16rpx;
+}
+.hint-text {
+  font-size: 24rpx;
+  color: #98a2b3;
+  line-height: 1.9;
+}
+
+/* ===== 已报名登录 ===== */
+.btn-relogin {
+  margin-top: 16rpx;
+  background: #fff;
+  color: #5B8DEF;
+  border: 2rpx solid #5B8DEF;
+  font-size: 28rpx;
+  height: 84rpx;
+  line-height: 80rpx;
+  border-radius: 42rpx;
   font-weight: 500;
 }
-.btn-main[disabled] { background: #ccc; color: #999; }
-.btn-main::after { border: none; }
-
-.tips {
-  padding: 30rpx 12rpx;
-  font-size: 24rpx;
-  color: #bbb;
-  line-height: 1.8;
-}
-
-.btn-dev {
-  margin-top: 20rpx;
-  background: #fff;
-  color: #999;
-  border: 1rpx solid #ddd;
-  font-size: 26rpx;
-  height: 72rpx;
-  line-height: 72rpx;
-  border-radius: 36rpx;
-}
-.btn-dev::after { border: none; }
-
-/* ===== 已登记直接登录 ===== */
-.btn-relogin {
-  margin-top: 30rpx;
-  background: #fff;
-  color: #4A90D9;
-  border: 2rpx solid #4A90D9;
-  font-size: 28rpx;
-  height: 80rpx;
-  line-height: 76rpx;
-  border-radius: 40rpx;
-}
 .btn-relogin[disabled] {
-  color: #ccc;
-  border-color: #ddd;
-  background: #fafafa;
+  color: #d0d5dd;
+  border-color: #eaecf0;
+  background: #f9fafb;
 }
 .btn-relogin::after { border: none; }
 
@@ -162,6 +149,19 @@
   display: block;
   text-align: center;
   font-size: 22rpx;
-  color: #F57C00;
+  color: #F79009;
   margin-top: 12rpx;
 }
+
+/* ===== 开发按钮 ===== */
+.btn-dev {
+  margin-top: 24rpx;
+  background: #f9fafb;
+  color: #98a2b3;
+  border: 1rpx solid #eaecf0;
+  font-size: 26rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  border-radius: 36rpx;
+}
+.btn-dev::after { border: none; }

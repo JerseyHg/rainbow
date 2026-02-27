@@ -1,23 +1,23 @@
 <view class="page">
-  <!-- 步骤条：3步 -->
+  <!-- 步骤条 -->
   <view class="steps">
     <view class="step {{currentStep >= 0 ? 'active' : ''}} {{currentStep === 0 ? 'current' : ''}}" bindtap="goStep" data-s="0">
       <view class="step-dot">1</view>
-      <text class="step-text">基本信息</text>
+      <text class="step-label">基本信息</text>
     </view>
     <view class="step-line {{currentStep >= 1 ? 'done' : ''}}"></view>
     <view class="step {{currentStep >= 1 ? 'active' : ''}} {{currentStep === 1 ? 'current' : ''}}" bindtap="goStep" data-s="1">
       <view class="step-dot">2</view>
-      <text class="step-text">关于我</text>
+      <text class="step-label">关于我</text>
     </view>
     <view class="step-line {{currentStep >= 2 ? 'done' : ''}}"></view>
     <view class="step {{currentStep >= 2 ? 'active' : ''}} {{currentStep === 2 ? 'current' : ''}}" bindtap="goStep" data-s="2">
       <view class="step-dot">3</view>
-      <text class="step-text">确认提交</text>
+      <text class="step-label">确认提交</text>
     </view>
   </view>
 
-  <!-- ===== 步骤0: 基本信息 ===== -->
+  <!-- ==================== 步骤 0：基本信息 ==================== -->
   <view wx:if="{{currentStep === 0}}">
     <view class="card">
       <text class="card-title">基本信息</text>
@@ -37,17 +37,17 @@
       <view class="field">
         <text class="label">* 生日</text>
         <picker mode="date" start="1945-01-01" end="2008-12-31" value="{{birthday}}" bindchange="onBirthdayChange">
-          <view class="input picker">
-            {{birthday || '请选择生日'}}
+          <view class="input picker-input">
+            <text class="{{birthday ? '' : 'placeholder'}}">{{birthday || '请选择生日'}}</text>
             <text class="arrow">▾</text>
           </view>
         </picker>
-        <view wx:if="{{birthday}}" style="margin-top: 10rpx; font-size: 26rpx; color: #888;">
+        <view class="derived-info" wx:if="{{birthday}}">
           年龄：{{age}}岁 · {{constellation}}
         </view>
       </view>
 
-      <view class="row">
+      <view class="row-2col">
         <view class="field col">
           <text class="label">* 身高</text>
           <input class="input" type="number" placeholder="cm" value="{{height}}" bindinput="onInput" data-key="height" />
@@ -87,16 +87,15 @@
     </view>
   </view>
 
-  <!-- ===== 步骤1: 关于我 ===== -->
+  <!-- ==================== 步骤 1：关于我 ==================== -->
   <view wx:if="{{currentStep === 1}}">
     <view class="card">
       <text class="card-title">关于我</text>
-
       <view class="field">
         <text class="label">MBTI</text>
         <picker bindchange="onPick" data-key="mbti" range="{{mbtiOptions}}" value="0">
-          <view class="input picker">
-            {{mbti || '请选择MBTI类型'}}
+          <view class="input picker-input">
+            <text class="{{mbti ? '' : 'placeholder'}}">{{mbti || '请选择MBTI类型'}}</text>
             <text class="arrow">▾</text>
           </view>
         </picker>
@@ -106,6 +105,7 @@
     <view class="card">
       <text class="card-title">兴趣爱好 <text class="sub">(最多10个)</text></text>
 
+      <!-- 已选标签 -->
       <view class="selected-hobbies" wx:if="{{selectedHobbies.length > 0}}">
         <view class="selected-tag" wx:for="{{selectedHobbies}}" wx:key="*this">
           <text>{{item}}</text>
@@ -113,12 +113,13 @@
         </view>
       </view>
 
+      <!-- 可选标签 -->
       <view class="tags">
         <text wx:for="{{hobbyTags}}" wx:key="*this" class="tag {{selectedHobbies.indexOf(item) >= 0 ? 'active' : ''}}" data-val="{{item}}" bindtap="toggleHobby">{{item}}</text>
       </view>
 
-      <!-- ★ 自定义兴趣输入 -->
-      <view class="hobby-add-row" style="margin-top: 20rpx;">
+      <!-- 自定义兴趣 -->
+      <view class="hobby-add-row">
         <input class="input hobby-input" type="text" placeholder="输入自定义兴趣..." value="{{customHobby}}" bindinput="onInput" data-key="customHobby" maxlength="10" />
         <button class="hobby-add-btn" bindtap="addCustomHobby">添加</button>
       </view>
@@ -135,6 +136,7 @@
       </view>
     </view>
 
+    <!-- 照片上传 -->
     <view class="card">
       <text class="card-title">照片上传 <text class="sub">(最多6张)</text></text>
 
@@ -143,13 +145,14 @@
       </view>
 
       <text class="tip">请上传清晰的个人照片</text>
-      <text class="tip" wx:if="{{uploadingPhoto}}" style="color: #4A90D9;">照片上传中...</text>
+      <text class="tip uploading-tip" wx:if="{{uploadingPhoto}}">照片上传中...</text>
+
       <view class="photo-grid">
         <view class="photo-item" wx:for="{{photos}}" wx:key="index">
           <image class="photo-img" src="{{item}}" mode="aspectFill" data-url="{{item}}" bindtap="previewPhoto" />
           <view class="photo-del" data-i="{{index}}" catchtap="removePhoto">✕</view>
-          <view class="photo-status" wx:if="{{!uploadedPhotos[index]}}">
-            <text class="photo-status-text">上传中</text>
+          <view class="photo-uploading" wx:if="{{!uploadedPhotos[index]}}">
+            <text class="photo-uploading-text">上传中</text>
           </view>
         </view>
         <view class="photo-add" bindtap="choosePhoto" wx:if="{{photos.length < 6}}">
@@ -159,6 +162,7 @@
       </view>
     </view>
 
+    <!-- 备注 -->
     <view class="card">
       <view class="field" style="margin-bottom:0;">
         <text class="label">备注</text>
@@ -167,7 +171,7 @@
     </view>
   </view>
 
-  <!-- ===== 步骤2: 确认信息 ===== -->
+  <!-- ==================== 步骤 2：确认提交 ==================== -->
   <view wx:if="{{currentStep === 2}}">
     <view class="card confirm-card">
       <text class="card-title">请确认您的报名信息</text>
@@ -194,7 +198,6 @@
         <text class="pv-hobby-tag" wx:for="{{selectedHobbies}}" wx:key="*this">{{item}}</text>
       </view>
 
-      <!-- ★ 上下排布 -->
       <view class="pv-block" wx:if="{{lifestyle}}">
         <text class="pv-block-label">自我描述</text>
         <text class="pv-block-content">{{lifestyle}}</text>
@@ -210,7 +213,6 @@
         <text class="pv-block-content">{{specialRequirements}}</text>
       </view>
 
-      <!-- ★ 照片：直接用 photos 数组（COS URL是完整URL，本地是临时路径，都能显示） -->
       <text class="section-label">照片</text>
       <view class="pv-photos" wx:if="{{photos.length > 0}}">
         <image class="pv-photo" wx:for="{{photos}}" wx:key="*this" src="{{item}}" mode="aspectFill" />
@@ -223,14 +225,10 @@
     </view>
   </view>
 
-  <!-- 底部按钮 -->
+  <!-- 底部操作栏 -->
   <view class="bottom-bar">
     <button class="btn-back" wx:if="{{currentStep > 0}}" bindtap="prevStep">上一步</button>
     <button class="btn-next" wx:if="{{currentStep < 2}}" bindtap="nextStep">下一步</button>
-    <button
-      class="btn-submit"
-      wx:if="{{currentStep === 2}}"
-      bindtap="onSubmit"
-    >确认并提交</button>
+    <button class="btn-submit" wx:if="{{currentStep === 2}}" bindtap="onSubmit">确认并提交</button>
   </view>
 </view>
