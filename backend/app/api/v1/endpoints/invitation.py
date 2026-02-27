@@ -8,7 +8,7 @@ from app.schemas.invitation import InvitationVerifyRequest, InvitationVerifyResp
 from app.schemas.common import ResponseModel
 from app.crud import crud_invitation, crud_profile
 from app.services.wechat import get_openid_from_code
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 router = APIRouter()
@@ -39,7 +39,7 @@ async def verify_invitation(
         )
 
     # 3. 检查是否过期
-    if invitation.expire_at and invitation.expire_at < datetime.utcnow():
+    if invitation.expire_at and invitation.expire_at < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="邀请码已过期"
