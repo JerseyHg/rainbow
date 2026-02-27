@@ -127,7 +127,6 @@ OperationalError: database is locked
 - DEBUG=True
 - 自动重载代码
 - 详细错误信息
-- 使用SQLite
 - 模拟微信登录
 
 ### 生产模式（部署时）

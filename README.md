@@ -6,7 +6,7 @@ LGBT+ 交友平台 - 彩虹注册系统
 
 | 目录 | 说明 | 技术栈 |
 |------|------|--------|
-| `backend/` | API 后端服务 | Python + FastAPI + SQLite |
+| `backend/` | API 后端服务 | Python + FastAPI + PostgreSQL |
 | `admin/` | 管理后台前端 | Vite + React + TypeScript |
 | `miniprogram/` | 微信小程序 | 原生微信小程序 + TypeScript |
 

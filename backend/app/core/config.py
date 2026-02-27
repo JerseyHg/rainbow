@@ -16,8 +16,7 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # ★ 默认使用 PostgreSQL（生产环境）
-    # 本地开发可在 .env 中改回 sqlite:///./rainbow_register.db
+    # PostgreSQL 数据库连接
     DATABASE_URL: str = "postgresql://rainbow:rainbow_prod_2026@shared-postgres:5432/rainbow_prod"
 
     SECRET_KEY: str = "your-secret-key-change-in-production"
@@ -31,30 +30,30 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 5242880
     ALLOWED_EXTENSIONS: Union[List[str], str] = "jpg,jpeg,png,webp"
 
-    # ★ 腾讯云 COS 配置
+    # 腾讯云 COS 配置
     COS_SECRET_ID: str = ""
     COS_SECRET_KEY: str = ""
     COS_REGION: str = "ap-shanghai"
     COS_BUCKET: str = "tbowo-1259330613"
     COS_DOMAIN: str = "https://tbowo-1259330613.cos.ap-shanghai.myqcloud.com"
-    COS_UPLOAD_PREFIX: str = "photos"  # COS中的目录前缀
+    COS_UPLOAD_PREFIX: str = "photos"
 
     INVITATION_CODE_LENGTH: int = 6
     INVITATION_EXPIRE_DAYS: int = 7
     DEFAULT_INVITATION_QUOTA: int = 2
 
-    # ★ 审核放行邀请码（使用这些邀请码提交的资料自动通过审核）
+    # 审核放行邀请码
     REVIEW_BYPASS_CODES: Union[List[str], str] = ""
     REVIEW_REJECT_CODES: Union[List[str], str] = ""
 
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD: str = "change_this_password"
 
-    # ===== AI 自动审核（智谱 GLM） =====
+    # AI 自动审核（智谱 GLM）
     AI_API_KEY: str = ""
     AI_API_URL: str = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-    AI_API_TYPE: str = "openai"  # 智谱用 openai 兼容格式
-    AI_MODEL: str = "glm-4.7-flash"  # 免费模型
+    AI_API_TYPE: str = "openai"
+    AI_MODEL: str = "glm-4.7-flash"
 
     CORS_ORIGINS: Union[List[str], str] = "*"
 
