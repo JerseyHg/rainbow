@@ -17,8 +17,9 @@ npm install
 
 ```bash
 # 在后端项目目录中
-python run.py
-# 后端会运行在 http://localhost:8000
+cd backend
+docker compose up -d --build
+# 后端运行在 http://localhost:8003
 ```
 
 ### 3. 启动前端
@@ -93,9 +94,9 @@ rainbow-admin/
 
 ## ⚙️ API 代理说明
 
-开发时，Vite 会将 `/api` 开头的请求代理到 `http://localhost:8000`（后端地址）。
+开发时，Vite 会将 `/api` 开头的请求代理到 `http://localhost:8003`（后端地址）。
 
-如果后端不在 `localhost:8000`，修改 `vite.config.ts`：
+如果后端不在 `localhost:8003`，修改 `vite.config.ts`：
 
 ```ts
 proxy: {
