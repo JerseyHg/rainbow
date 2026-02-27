@@ -372,6 +372,18 @@ async def delete_profile(
     # ★ 清理COS上该用户的所有照片（按目录批量删除）
     _cleanup_user_cos_photos(openid)
 
+    # ★ 重置该用户使用的邀请码（允许再次使用）
+    if profile.invitation_code_used:
+        inv = db.query(InvitationCode).filter(
+            InvitationCode.code == profile.invitation_code_used
+        ).first()
+        if inv:
+            inv.is_used = False
+            inv.used_by = None
+            inv.used_by_openid = None
+            inv.used_at = None
+            db.commit()
+
     # 删除数据库记录
     crud_profile.delete_profile(db, profile.id)
 
