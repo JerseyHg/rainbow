@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/profile/profile",
+    "pages/status/status",
+    "pages/codes/codes",
+    "pages/privacy/privacy"
+  ],
+  "lazyCodeLoading": "requiredComponents",
+  "__usePrivacyCheck__": true,
+  "window": {
+    "navigationBarTitleText": "TB报名助手",
+    "navigationBarBackgroundColor": "#f0f4f8",
+    "navigationBarTextStyle": "black",
+    "enablePullDownRefresh": false
+  }
+}

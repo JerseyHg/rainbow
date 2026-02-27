@@ -1,0 +1,75 @@
+<view class="page">
+  <!-- 加载中 -->
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <text class="loading-emoji">🎫</text>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <view wx:else>
+    <!-- 顶部统计 -->
+    <view class="stats-card">
+      <view class="stat-item">
+        <text class="stat-num">{{total}}</text>
+        <text class="stat-label">总计</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-num used">{{used}}</text>
+        <text class="stat-label">已使用</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-num remaining">{{remaining}}</text>
+        <text class="stat-label">可用</text>
+      </view>
+    </view>
+
+    <!-- 邀请码列表 -->
+    <view class="card" wx:if="{{codes.length > 0}}">
+      <text class="card-title">邀请码列表</text>
+
+      <view
+        class="code-item {{item.is_used ? 'used' : ''}} {{copiedCode === item.code ? 'copied' : ''}}"
+        wx:for="{{codes}}"
+        wx:key="code"
+      >
+        <view class="code-left">
+          <text class="code-text">{{item.code}}</text>
+          <text class="code-status" wx:if="{{item.is_used}}">已被使用</text>
+          <text class="code-status available" wx:else>可使用</text>
+        </view>
+        <view class="code-right">
+          <button
+            class="btn-copy {{item.is_used ? 'disabled' : ''}}"
+            bindtap="copyCode"
+            data-code="{{item.code}}"
+            disabled="{{item.is_used}}"
+          >{{copiedCode === item.code ? '已复制 ✓' : '复制'}}</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 无邀请码 -->
+    <view class="empty-wrap" wx:if="{{codes.length === 0}}">
+      <text class="empty-emoji">🎫</text>
+      <text class="empty-text">暂无邀请码</text>
+      <text class="empty-desc">资料发布后将自动获得邀请码</text>
+    </view>
+
+    <!-- 使用说明 -->
+    <view class="tips-card">
+      <text class="tips-title">使用说明</text>
+      <text class="tips-text">• 将邀请码分享给你的朋友</text>
+      <text class="tips-text">• 每个邀请码只能使用一次</text>
+      <text class="tips-text">• 点击「复制」可复制邀请码</text>
+      <text class="tips-text">• 也可以直接转发小程序给好友</text>
+    </view>
+
+    <!-- 分享按钮 -->
+    <view class="share-wrap" wx:if="{{remaining > 0}}">
+      <button class="btn-share" open-type="share">
+        <text>📤 转发给好友</text>
+      </button>
+    </view>
+  </view>
+</view>

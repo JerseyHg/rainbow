@@ -1,0 +1,40 @@
+.page { min-height: 100vh; background: #ffffff; padding: 0 36rpx 60rpx; }
+.loading-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 200rpx; }
+.loading-emoji { font-size: 80rpx; }
+.loading-text { font-size: 28rpx; color: #999; margin-top: 16rpx; }
+
+.stats-card { display: flex; align-items: center; justify-content: space-around; background: #fff; border-radius: 16rpx; padding: 30rpx 0; margin-bottom: 20rpx; }
+.stat-item { text-align: center; }
+.stat-num { display: block; font-size: 40rpx; font-weight: 700; color: #333; }
+.stat-num.used { color: #999; }
+.stat-num.remaining { color: #4A90D9; }
+.stat-label { display: block; font-size: 22rpx; color: #999; margin-top: 4rpx; }
+.stat-divider { width: 1rpx; height: 50rpx; background: #eee; }
+
+.card { background: #fff; border-radius: 16rpx; padding: 28rpx 32rpx; margin-bottom: 20rpx; }
+.card-title { display: block; font-size: 28rpx; font-weight: 600; color: #333; margin-bottom: 16rpx; }
+
+.code-item { display: flex; align-items: center; justify-content: space-between; padding: 20rpx 0; border-bottom: 1rpx solid #f5f5f5; transition: background 0.3s; }
+.code-item.used { opacity: 0.5; }
+.code-item.copied { background: rgba(74,144,217,0.06); border-radius: 12rpx; margin: 0 -12rpx; padding: 20rpx 12rpx; }
+.code-left { display: flex; flex-direction: column; gap: 6rpx; }
+.code-text { font-size: 32rpx; font-weight: 600; color: #333; letter-spacing: 4rpx; }
+.code-status { font-size: 22rpx; color: #999; }
+.code-status.available { color: #4A90D9; }
+
+.btn-copy { background: #4A90D9; color: #fff; font-size: 24rpx; border: none; border-radius: 30rpx; padding: 0 24rpx; height: 60rpx; line-height: 60rpx; min-width: 120rpx; }
+.btn-copy::after { border: none; }
+.btn-copy.disabled { background: #ddd; color: #999; }
+
+.empty-wrap { display: flex; flex-direction: column; align-items: center; padding: 80rpx 0 40rpx; }
+.empty-emoji { font-size: 80rpx; }
+.empty-text { font-size: 32rpx; color: #666; margin-top: 20rpx; font-weight: 500; }
+.empty-desc { font-size: 26rpx; color: #bbb; margin-top: 10rpx; }
+
+.tips-card { padding: 28rpx 32rpx; background: rgba(74,144,217,0.04); border-radius: 16rpx; margin-bottom: 20rpx; }
+.tips-title { display: block; font-size: 26rpx; font-weight: 600; color: #4A90D9; margin-bottom: 12rpx; }
+.tips-text { display: block; font-size: 24rpx; color: #999; line-height: 1.8; }
+
+.share-wrap { padding: 20rpx 0 40rpx; }
+.btn-share { background: linear-gradient(135deg, #4A90D9, #5BA0E9); color: #fff; border: none; border-radius: 48rpx; height: 88rpx; line-height: 88rpx; font-size: 32rpx; font-weight: 500; }
+.btn-share::after { border: none; }

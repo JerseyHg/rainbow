@@ -1,0 +1,69 @@
+<view class="page">
+  <view class="content">
+    <text class="main-title">用户隐私保护指引</text>
+    <text class="update-info">更新日期：2026年2月12日　生效日期：2026年2月12日</text>
+
+    <text class="intro">感谢您使用TBOWO报名助手。我们非常重视您的隐私保护，本指引将帮助您了解我们如何收集、使用和保护您的个人信息。</text>
+
+    <!-- 一、收集的信息 -->
+    <text class="section-title">一、我们收集的信息</text>
+    <text class="para">为向您提供TBOWO报名服务，我们可能收集以下信息：</text>
+    <text class="item">1. 基本信息：昵称、性别、年龄、身高、体重等个人描述信息</text>
+    <text class="item">2. 偏好信息：兴趣爱好、生活方式、个人偏好等</text>
+    <text class="item">3. 联系方式：（仅用于必要的服务沟通）</text>
+    <text class="item">4. 照片：您主动上传的个人照片</text>
+    <text class="item">5. 设备标识：微信OpenID（用于识别用户身份，非个人敏感信息）</text>
+
+    <!-- 二、信息的使用 -->
+    <text class="section-title">二、信息的使用</text>
+    <text class="para">您的信息仅用于以下目的：</text>
+    <text class="item">1. 提供信息登记和资料审核服务</text>
+    <text class="item">2. 向您发送审核结果通知</text>
+    <text class="item">3. 改善和优化我们的服务质量</text>
+    <text class="item">4. 防范和处理违规行为</text>
+    <text class="para bold">我们承诺不会将您的个人信息出售或提供给任何无关第三方。</text>
+
+    <!-- 三、信息的存储与保护 -->
+    <text class="section-title">三、信息的存储与保护</text>
+    <text class="item">1. 您的信息存储在安全的服务器中，采用加密传输（HTTPS）</text>
+    <text class="item">2. 我们会采取合理的技术和管理措施保护您的信息安全</text>
+    <text class="item">3. 仅授权人员可访问您的个人信息，且受严格保密义务约束</text>
+    <text class="item">4. 您可以随时自主删除您的个人信息</text>
+
+    <!-- 四、信息的共享 -->
+    <text class="section-title">四、信息的共享</text>
+    <text class="para">在以下情况下，我们可能共享您的信息：</text>
+    <text class="item">1. 获得您的明确同意后</text>
+    <text class="item">2. 根据法律法规的要求</text>
+    <text class="item">3. 为保护我们或公众的合法权益</text>
+
+    <!-- 五、您的权利 -->
+    <text class="section-title">五、您的权利</text>
+    <text class="item">1. 查看权：您有权查看您提交的个人信息</text>
+    <text class="item">2. 修改权：您有权修改不准确的个人信息</text>
+    <text class="item">3. 删除权：您有权删除您的个人信息</text>
+    <text class="item">4. 撤回同意：您有权撤回已授予的同意</text>
+
+    <!-- 六、未成年人保护 -->
+    <text class="section-title">六、未成年人保护</text>
+    <text class="para">本小程序仅面向18岁及以上的成年用户。如果我们发现在未获得父母或监护人同意的情况下收集了未成年人的个人信息，我们会尽快删除相关数据。</text>
+
+    <!-- 七、隐私指引的变更 -->
+    <text class="section-title">七、隐私指引的变更</text>
+    <text class="para">我们可能不时更新本隐私保护指引。重大变更时，我们会以适当方式通知您。继续使用我们的服务即表示您同意更新后的指引。</text>
+
+    <!-- 八、联系我们 -->
+    <text class="section-title">八、联系我们</text>
+    <text class="para">如果您对本隐私保护指引有任何疑问、意见或建议，请通过以下方式联系我们：</text>
+    <text class="item">邮箱：teban.official@gmail.com</text>
+
+    <!-- 查看平台隐私协议链接 -->
+    <view class="contract-link" bindtap="openPrivacyContract">
+      <text class="contract-link-text">查看微信平台隐私协议全文</text>
+    </view>
+
+    <view class="footer">
+      <text class="footer-text">— 感谢您的信任 —</text>
+    </view>
+  </view>
+</view>

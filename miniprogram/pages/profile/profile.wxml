@@ -1,0 +1,236 @@
+<view class="page">
+  <!-- 步骤条：3步 -->
+  <view class="steps">
+    <view class="step {{currentStep >= 0 ? 'active' : ''}} {{currentStep === 0 ? 'current' : ''}}" bindtap="goStep" data-s="0">
+      <view class="step-dot">1</view>
+      <text class="step-text">基本信息</text>
+    </view>
+    <view class="step-line {{currentStep >= 1 ? 'done' : ''}}"></view>
+    <view class="step {{currentStep >= 1 ? 'active' : ''}} {{currentStep === 1 ? 'current' : ''}}" bindtap="goStep" data-s="1">
+      <view class="step-dot">2</view>
+      <text class="step-text">关于我</text>
+    </view>
+    <view class="step-line {{currentStep >= 2 ? 'done' : ''}}"></view>
+    <view class="step {{currentStep >= 2 ? 'active' : ''}} {{currentStep === 2 ? 'current' : ''}}" bindtap="goStep" data-s="2">
+      <view class="step-dot">3</view>
+      <text class="step-text">确认提交</text>
+    </view>
+  </view>
+
+  <!-- ===== 步骤0: 基本信息 ===== -->
+  <view wx:if="{{currentStep === 0}}">
+    <view class="card">
+      <text class="card-title">基本信息</text>
+
+      <view class="field">
+        <text class="label">* 姓名/昵称</text>
+        <input class="input" type="text" placeholder="请输入" value="{{name}}" bindinput="onInput" data-key="name" maxlength="20" />
+      </view>
+
+      <view class="field">
+        <text class="label">* 性别</text>
+        <view class="tags">
+          <text wx:for="{{genderOptions}}" wx:key="*this" class="tag {{gender === item ? 'active' : ''}}" data-key="gender" data-val="{{item}}" bindtap="onTagTap">{{item}}</text>
+        </view>
+      </view>
+
+      <view class="field">
+        <text class="label">* 生日</text>
+        <picker mode="date" start="1945-01-01" end="2008-12-31" value="{{birthday}}" bindchange="onBirthdayChange">
+          <view class="input picker">
+            {{birthday || '请选择生日'}}
+            <text class="arrow">▾</text>
+          </view>
+        </picker>
+        <view wx:if="{{birthday}}" style="margin-top: 10rpx; font-size: 26rpx; color: #888;">
+          年龄：{{age}}岁 · {{constellation}}
+        </view>
+      </view>
+
+      <view class="row">
+        <view class="field col">
+          <text class="label">* 身高</text>
+          <input class="input" type="number" placeholder="cm" value="{{height}}" bindinput="onInput" data-key="height" />
+        </view>
+        <view class="field col">
+          <text class="label">* 体重</text>
+          <input class="input" type="number" placeholder="kg" value="{{weight}}" bindinput="onInput" data-key="weight" />
+        </view>
+      </view>
+
+      <view class="field">
+        <text class="label">体型</text>
+        <view class="tags">
+          <text wx:for="{{bodyTypeOptions}}" wx:key="*this" class="tag {{bodyType === item ? 'active' : ''}}" data-key="bodyType" data-val="{{item}}" bindtap="onTagTap">{{item}}</text>
+        </view>
+      </view>
+
+      <view class="field">
+        <text class="label">籍贯</text>
+        <input class="input" type="text" placeholder="如：广东广州" value="{{hometown}}" bindinput="onInput" data-key="hometown" maxlength="20" />
+      </view>
+
+      <view class="field">
+        <text class="label">工作地</text>
+        <input class="input" type="text" placeholder="如：上海" value="{{workLocation}}" bindinput="onInput" data-key="workLocation" maxlength="20" />
+      </view>
+
+      <view class="field">
+        <text class="label">行业</text>
+        <input class="input" type="text" placeholder="如：互联网" value="{{industry}}" bindinput="onInput" data-key="industry" maxlength="20" />
+      </view>
+
+      <view class="field" style="margin-bottom:0;">
+        <text class="label">微信号（联系方式）</text>
+        <input class="input" type="text" placeholder="请输入您的微信号" value="{{wechatId}}" bindinput="onInput" data-key="wechatId" maxlength="30" />
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 步骤1: 关于我 ===== -->
+  <view wx:if="{{currentStep === 1}}">
+    <view class="card">
+      <text class="card-title">关于我</text>
+
+      <view class="field">
+        <text class="label">MBTI</text>
+        <picker bindchange="onPick" data-key="mbti" range="{{mbtiOptions}}" value="0">
+          <view class="input picker">
+            {{mbti || '请选择MBTI类型'}}
+            <text class="arrow">▾</text>
+          </view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card-title">兴趣爱好 <text class="sub">(最多10个)</text></text>
+
+      <view class="selected-hobbies" wx:if="{{selectedHobbies.length > 0}}">
+        <view class="selected-tag" wx:for="{{selectedHobbies}}" wx:key="*this">
+          <text>{{item}}</text>
+          <text class="selected-del" data-i="{{index}}" catchtap="removeHobby">✕</text>
+        </view>
+      </view>
+
+      <view class="tags">
+        <text wx:for="{{hobbyTags}}" wx:key="*this" class="tag {{selectedHobbies.indexOf(item) >= 0 ? 'active' : ''}}" data-val="{{item}}" bindtap="toggleHobby">{{item}}</text>
+      </view>
+
+      <!-- ★ 自定义兴趣输入 -->
+      <view class="hobby-add-row" style="margin-top: 20rpx;">
+        <input class="input hobby-input" type="text" placeholder="输入自定义兴趣..." value="{{customHobby}}" bindinput="onInput" data-key="customHobby" maxlength="10" />
+        <button class="hobby-add-btn" bindtap="addCustomHobby">添加</button>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="field">
+        <text class="label">自我描述</text>
+        <textarea class="textarea" placeholder="简单介绍一下你自己..." value="{{lifestyle}}" bindinput="onInput" data-key="lifestyle" maxlength="300" />
+      </view>
+      <view class="field" style="margin-bottom:0;">
+        <text class="label">对活动的期望</text>
+        <textarea class="textarea" placeholder="你希望通过活动获得什么样的体验..." value="{{activityExpectation}}" bindinput="onInput" data-key="activityExpectation" maxlength="300" />
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card-title">照片上传 <text class="sub">(最多6张)</text></text>
+
+      <view class="privacy-notice">
+        <text class="privacy-notice-text">🔒 隐私提醒：您上传的照片仅用于报名审核，未经您同意不会公开展示。请勿上传包含身份证、银行卡等敏感信息的照片。</text>
+      </view>
+
+      <text class="tip">请上传清晰的个人照片</text>
+      <text class="tip" wx:if="{{uploadingPhoto}}" style="color: #4A90D9;">照片上传中...</text>
+      <view class="photo-grid">
+        <view class="photo-item" wx:for="{{photos}}" wx:key="index">
+          <image class="photo-img" src="{{item}}" mode="aspectFill" data-url="{{item}}" bindtap="previewPhoto" />
+          <view class="photo-del" data-i="{{index}}" catchtap="removePhoto">✕</view>
+          <view class="photo-status" wx:if="{{!uploadedPhotos[index]}}">
+            <text class="photo-status-text">上传中</text>
+          </view>
+        </view>
+        <view class="photo-add" bindtap="choosePhoto" wx:if="{{photos.length < 6}}">
+          <text class="add-icon">+</text>
+          <text class="add-text">添加照片</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="field" style="margin-bottom:0;">
+        <text class="label">备注</text>
+        <textarea class="textarea" placeholder="其他想补充的信息..." value="{{specialRequirements}}" bindinput="onInput" data-key="specialRequirements" maxlength="300" />
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 步骤2: 确认信息 ===== -->
+  <view wx:if="{{currentStep === 2}}">
+    <view class="card confirm-card">
+      <text class="card-title">请确认您的报名信息</text>
+      <text class="tip">提交后将进入审核流程</text>
+
+      <text class="section-label">基本信息</text>
+      <view class="pv-row"><text class="pv-l">姓名</text><text class="pv-r">{{name}}</text></view>
+      <view class="pv-row"><text class="pv-l">性别</text><text class="pv-r">{{gender}}</text></view>
+      <view class="pv-row" wx:if="{{birthday}}"><text class="pv-l">生日</text><text class="pv-r">{{birthday}}</text></view>
+      <view class="pv-row"><text class="pv-l">年龄</text><text class="pv-r">{{age}}岁</text></view>
+      <view class="pv-row"><text class="pv-l">身高/体重</text><text class="pv-r">{{height}}cm / {{weight}}kg</text></view>
+      <view class="pv-row" wx:if="{{bodyType}}"><text class="pv-l">体型</text><text class="pv-r">{{bodyType}}</text></view>
+      <view class="pv-row" wx:if="{{hometown}}"><text class="pv-l">籍贯</text><text class="pv-r">{{hometown}}</text></view>
+      <view class="pv-row" wx:if="{{workLocation}}"><text class="pv-l">工作地</text><text class="pv-r">{{workLocation}}</text></view>
+      <view class="pv-row" wx:if="{{industry}}"><text class="pv-l">行业</text><text class="pv-r">{{industry}}</text></view>
+      <view class="pv-row" wx:if="{{wechatId}}"><text class="pv-l">联系方式</text><text class="pv-r">{{wechatId}}</text></view>
+
+      <text class="section-label" wx:if="{{constellation || mbti}}">关于我</text>
+      <view class="pv-row" wx:if="{{constellation}}"><text class="pv-l">星座</text><text class="pv-r">{{constellation}}</text></view>
+      <view class="pv-row" wx:if="{{mbti}}"><text class="pv-l">MBTI</text><text class="pv-r">{{mbti}}</text></view>
+
+      <text class="section-label" wx:if="{{selectedHobbies.length > 0}}">兴趣爱好</text>
+      <view class="pv-hobbies" wx:if="{{selectedHobbies.length > 0}}">
+        <text class="pv-hobby-tag" wx:for="{{selectedHobbies}}" wx:key="*this">{{item}}</text>
+      </view>
+
+      <!-- ★ 上下排布 -->
+      <view class="pv-block" wx:if="{{lifestyle}}">
+        <text class="pv-block-label">自我描述</text>
+        <text class="pv-block-content">{{lifestyle}}</text>
+      </view>
+
+      <view class="pv-block" wx:if="{{activityExpectation}}">
+        <text class="pv-block-label">对活动的期望</text>
+        <text class="pv-block-content">{{activityExpectation}}</text>
+      </view>
+
+      <view class="pv-block" wx:if="{{specialRequirements}}">
+        <text class="pv-block-label">备注</text>
+        <text class="pv-block-content">{{specialRequirements}}</text>
+      </view>
+
+      <!-- ★ 照片：直接用 photos 数组（COS URL是完整URL，本地是临时路径，都能显示） -->
+      <text class="section-label">照片</text>
+      <view class="pv-photos" wx:if="{{photos.length > 0}}">
+        <image class="pv-photo" wx:for="{{photos}}" wx:key="*this" src="{{item}}" mode="aspectFill" />
+      </view>
+      <text class="pv-empty" wx:if="{{photos.length === 0}}">未上传照片</text>
+    </view>
+
+    <view class="confirm-tip">
+      <text>提交后报名信息将进入审核，请耐心等待。如需修改可返回上一步。</text>
+    </view>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="bottom-bar">
+    <button class="btn-back" wx:if="{{currentStep > 0}}" bindtap="prevStep">上一步</button>
+    <button class="btn-next" wx:if="{{currentStep < 2}}" bindtap="nextStep">下一步</button>
+    <button
+      class="btn-submit"
+      wx:if="{{currentStep === 2}}"
+      bindtap="onSubmit"
+    >确认并提交</button>
+  </view>
+</view>

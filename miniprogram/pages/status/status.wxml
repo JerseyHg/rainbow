@@ -1,0 +1,101 @@
+<view class="page">
+  <!-- 加载中 -->
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-dot"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 未提交资料 -->
+  <view wx:elif="{{!hasProfile}}">
+    <view class="empty-card">
+      <view class="empty-icon">📝</view>
+      <text class="empty-title">您尚未提交报名信息</text>
+      <text class="empty-desc">填写个人信息，完成报名登记</text>
+      <button class="btn-primary" bindtap="goFillProfile">去填写信息</button>
+    </view>
+  </view>
+
+  <!-- 已提交 -->
+  <view wx:else>
+    <!-- 状态卡片 -->
+    <view class="status-card status-{{status}}">
+      <view class="status-icon-wrap">
+        <text class="status-icon">{{statusEmoji}}</text>
+      </view>
+      <text class="status-label">{{statusLabel}}</text>
+      <text class="status-desc">{{statusDesc}}</text>
+      <view class="serial-badge" wx:if="{{serialNumber}}">
+        <text class="serial-label">编号</text>
+        <text class="serial-num">№{{serialNumber}}</text>
+      </view>
+    </view>
+
+    <!-- 审核中：操作按钮（修改 + 撤回删除） -->
+    <view class="action-btns" wx:if="{{status === 'pending'}}">
+      <button class="btn-edit" bindtap="goEditProfile">修改信息</button>
+      <button class="btn-delete" bindtap="onDeleteProfile">撤回并删除</button>
+    </view>
+
+    <!-- ★ 审核通过/已发布：操作按钮（删除档案） -->
+    <view class="action-btns" wx:if="{{status === 'approved' || status === 'published'}}">
+      <button class="btn-delete" bindtap="onDeleteApprovedProfile">删除我的档案</button>
+    </view>
+
+    <!-- 拒绝原因 + 操作按钮 -->
+    <view class="card reject-card" wx:if="{{status === 'rejected' && rejectionReason}}">
+      <view class="reject-header">
+        <text class="reject-icon">⚠️</text>
+        <text class="card-title">未通过原因</text>
+      </view>
+      <text class="reject-reason">{{rejectionReason}}</text>
+      <view class="reject-actions">
+        <button class="btn-primary" bindtap="goEditProfile">修改信息并重新提交</button>
+        <button class="btn-delete-text" bindtap="onDeleteProfile">不想报名了，删除资料</button>
+      </view>
+    </view>
+
+    <!-- 信息概览 -->
+    <view class="card">
+      <text class="card-title">报名信息</text>
+      <view class="info-row">
+        <text class="info-label">提交时间</text>
+        <text class="info-value">{{createTime}}</text>
+      </view>
+      <view class="info-row" wx:if="{{publishedAt}}">
+        <text class="info-label">通过时间</text>
+        <text class="info-value">{{publishedAt}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">当前状态</text>
+        <view class="status-tag status-tag-{{status}}">
+          <text>{{statusLabel}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 邀请码入口 -->
+    <view class="action-card" wx:if="{{status === 'approved' || status === 'published'}}" bindtap="goMyCodes">
+      <view class="action-left">
+        <view class="action-icon-wrap">🎫</view>
+        <view class="action-info">
+          <text class="action-title">我的邀请码</text>
+          <text class="action-desc">你有 {{invitationQuota}} 个邀请名额</text>
+        </view>
+      </view>
+      <text class="action-arrow">›</text>
+    </view>
+
+    <!-- 审核中提示 -->
+    <view class="tips-card" wx:if="{{status === 'pending'}}">
+      <text class="tips-title">📌 温馨提示</text>
+      <text class="tips-text">审核通常在 1-3 个工作日内完成</text>
+      <text class="tips-text">审核通过后会通知您</text>
+      <text class="tips-text">同时会获得专属邀请码</text>
+    </view>
+
+    <!-- 退出登录 -->
+    <view class="logout-wrap">
+      <button class="btn-logout" bindtap="onLogout">退出登录</button>
+    </view>
+  </view>
+</view>
