@@ -7,7 +7,7 @@ App({
     openid: '',
     hasProfile: false,
     // TODO: 部署时替换为实际域名（必须 HTTPS）
-    baseUrl: 'http://111.229.254.50:8000/api/v1',
+    baseUrl: 'https://tbowo.top/rainbow/api/v1',
 
     // ⬇️ Mock 模式：设为 true 则无需后端，使用本地模拟数据
     // ⬇️ 上线前务必改为 false
