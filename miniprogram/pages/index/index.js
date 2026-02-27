@@ -5,7 +5,6 @@ Page({
     code: '',
     loading: false,
     autoLogging: false,
-    devMode: false,
 
     // 隐私勾选状态
     privacyChecked: false,
@@ -253,12 +252,6 @@ Page({
     } else {
       wx.redirectTo({ url: '/pages/profile/profile' })
     }
-  },
-
-  onDevSkip: function () {
-    var app = getApp()
-    app.saveLogin('dev_openid_123', false)
-    wx.redirectTo({ url: '/pages/profile/profile' })
   },
 
   onShareAppMessage: function () {

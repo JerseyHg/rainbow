@@ -55,8 +55,5 @@
       disabled="{{loading || !privacyChecked}}"
     >已报名？直接登录</button>
     <text class="relogin-hint" wx:if="{{!privacyChecked}}">请先勾选同意隐私保护指引</text>
-
-    <!-- 开发调试 -->
-    <button class="btn-dev" wx:if="{{devMode}}" bindtap="onDevSkip">开发模式：跳过验证</button>
   </view>
 </view>

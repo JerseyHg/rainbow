@@ -5,7 +5,6 @@ Page({
     code: '',
     loading: false,
     autoLogging: false,
-    devMode: false,
 
     // 隐私勾选状态
     privacyChecked: false,
@@ -207,12 +206,6 @@ Page({
         fail: () => reject(new Error('微信登录失败'))
       })
     })
-  },
-
-  onDevSkip() {
-    const app = getApp<IAppOption>()
-    app.saveLogin('dev_openid_123', false)
-    wx.redirectTo({ url: '/pages/profile/profile' })
   },
 
   onShareAppMessage() {

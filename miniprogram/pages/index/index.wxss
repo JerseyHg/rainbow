@@ -152,16 +152,3 @@
   color: #F79009;
   margin-top: 12rpx;
 }
-
-/* ===== 开发按钮 ===== */
-.btn-dev {
-  margin-top: 24rpx;
-  background: #f9fafb;
-  color: #98a2b3;
-  border: 1rpx solid #eaecf0;
-  font-size: 26rpx;
-  height: 72rpx;
-  line-height: 72rpx;
-  border-radius: 36rpx;
-}
-.btn-dev::after { border: none; }
