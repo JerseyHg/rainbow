@@ -133,55 +133,37 @@ def _build_rejection_message(missing: Dict[str, str]) -> str:
 
 async def _call_ai_api(prompt: str, system_prompt: str = "") -> Optional[str]:
     """
-    调用 AI API
-    ★ 智谱 GLM 使用 OpenAI 兼容格式
-    ★ 也支持 Claude / DeepSeek / 通义千问等
+    调用豆包 AI API（OpenAI 兼容格式）
 
     返回 AI 的文本回复，失败返回 None
     """
-    if not settings.AI_API_KEY:
-        logger.warning("AI_API_KEY 未配置，跳过 AI 分析")
+    if not settings.DOUBAO_API_KEY:
+        logger.warning("DOUBAO_API_KEY 未配置，跳过 AI 分析")
         return None
 
+    api_url = settings.DOUBAO_BASE_URL.rstrip('/') + '/chat/completions'
     headers = {
         "Content-Type": "application/json",
+        "Authorization": f"Bearer {settings.DOUBAO_API_KEY}",
     }
-
-    if settings.AI_API_TYPE == "claude":
-        # Anthropic Claude 格式
-        headers["x-api-key"] = settings.AI_API_KEY
-        headers["anthropic-version"] = "2023-06-01"
-        payload = {
-            "model": settings.AI_MODEL,
-            "max_tokens": 2000,
-            "messages": [{"role": "user", "content": prompt}],
-        }
-        if system_prompt:
-            payload["system"] = system_prompt
-    else:
-        # ★ OpenAI 兼容格式（智谱 GLM / DeepSeek / 通义千问等）
-        headers["Authorization"] = f"Bearer {settings.AI_API_KEY}"
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
-        payload = {
-            "model": settings.AI_MODEL,
-            "max_tokens": 2000,
-            "messages": messages,
-            "temperature": 0.1,  # 低温度，输出更稳定
-        }
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+    payload = {
+        "model": settings.DOUBAO_MODEL,
+        "max_tokens": 2000,
+        "messages": messages,
+        "temperature": 0.1,
+    }
 
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(settings.AI_API_URL, headers=headers, json=payload)
+            resp = await client.post(api_url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
 
-        if settings.AI_API_TYPE == "claude":
-            return data.get("content", [{}])[0].get("text", "")
-        else:
-            return data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        return data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
     except httpx.HTTPStatusError as e:
         logger.error(f"AI API HTTP错误: {e.response.status_code} - {e.response.text}")
