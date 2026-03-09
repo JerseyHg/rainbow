@@ -25,6 +25,9 @@ export interface ProfileSummary {
   gender: string
   age: number
   work_location: string | null
+  industry: string | null
+  hometown: string | null
+  avatar: string | null
   create_time: string
   status: ProfileStatus
 }

@@ -162,10 +162,14 @@ async def list_profiles(
     total = query.count()
     data = []
     for profile in profiles:
+        photos = profile.photos or []
         data.append({
             "id": profile.id, "serial_number": profile.serial_number,
             "name": profile.name, "gender": profile.gender, "age": profile.age,
             "work_location": profile.work_location,
+            "industry": profile.industry,
+            "hometown": profile.hometown,
+            "avatar": photos[0] if photos else None,
             "create_time": profile.create_time.strftime("%Y-%m-%d %H:%M:%S") if profile.create_time else None,
             "status": profile.status,
         })
