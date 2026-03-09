@@ -8,7 +8,6 @@
 """
 import sys
 from pathlib import Path
-from datetime import timedelta, datetime, timezone
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
@@ -36,18 +35,17 @@ def _process_codes(db, codes, label, notes):
                 existing.used_by = None
                 existing.used_by_openid = None
                 existing.used_at = None
-                existing.expire_at = datetime.now(timezone.utc) + timedelta(days=30)
+                existing.expire_at = None
                 db.commit()
-                print(f"  🔄 {code} 已重置（有效期延长30天）")
+                print(f"  🔄 {code} 已重置（永不过期）")
             else:
                 print(f"  ⏭  {code} 已存在，无需操作")
         else:
-            expire_at = datetime.now(timezone.utc) + timedelta(days=30)
             create_invitation_code(
                 db=db, code=code, created_by=0, created_by_type="admin",
-                notes=notes, expire_at=expire_at,
+                notes=notes,
             )
-            print(f"  ✅ {code} 创建成功（有效期30天）")
+            print(f"  ✅ {code} 创建成功（永不过期）")
 
 
 def main():
