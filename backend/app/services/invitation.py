@@ -3,7 +3,6 @@
 """
 import random
 import string
-from datetime import datetime, timedelta
 from app.core.config import settings
 
 
@@ -18,8 +17,3 @@ def generate_invitation_code() -> str:
 
     code = ''.join(random.choices(chars, k=settings.INVITATION_CODE_LENGTH))
     return code
-
-
-def calculate_expire_time() -> datetime:
-    """计算邀请码过期时间"""
-    return datetime.utcnow() + timedelta(days=settings.INVITATION_EXPIRE_DAYS)

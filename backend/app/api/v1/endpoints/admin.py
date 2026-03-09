@@ -9,11 +9,12 @@ from app.schemas.admin import AdminLoginRequest, AdminLoginResponse, ApproveRequ
 from app.schemas.common import ResponseModel
 from app.crud import crud_admin, crud_profile, crud_invitation
 from app.services.post_generator import generate_post_content
-from app.services.invitation import generate_invitation_code, calculate_expire_time
+from app.services.invitation import generate_invitation_code
 from app.core.config import settings
 from app.models.user_profile import UserProfile
 from app.models.invitation_code import InvitationCode
-from datetime import timedelta
+
+
 from collections import defaultdict
 import logging
 import asyncio
@@ -374,10 +375,9 @@ async def approve_profile(
     generated_codes = []
     for _ in range(settings.DEFAULT_INVITATION_QUOTA):
         code = generate_invitation_code()
-        expire_at = calculate_expire_time()
         crud_invitation.create_invitation_code(
             db=db, code=code, created_by=profile.id, created_by_type="user",
-            notes=f"用户{profile.serial_number}的邀请码", expire_at=expire_at
+            notes=f"用户{profile.serial_number}的邀请码"
         )
         generated_codes.append(code)
 
@@ -410,7 +410,7 @@ async def reject_profile(
 
 @router.post("/invitation/generate", response_model=ResponseModel)
 async def generate_invitations(
-        count: int = 10, expire_days: int = 7, notes: str = None,
+        count: int = 10, notes: str = None,
         admin: dict = Depends(get_current_admin), db: Session = Depends(get_db)
 ):
     """批量生成邀请码"""
@@ -418,12 +418,11 @@ async def generate_invitations(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="单次最多生成100个邀请码")
 
     generated_codes = []
-    expire_at = calculate_expire_time() if expire_days > 0 else None
     for _ in range(count):
         code = generate_invitation_code()
         crud_invitation.create_invitation_code(
             db=db, code=code, created_by=0, created_by_type="admin",
-            notes=notes or "管理员生成", expire_at=expire_at
+            notes=notes or "管理员生成"
         )
         generated_codes.append(code)
 

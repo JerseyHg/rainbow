@@ -8,7 +8,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from app.db.base import SessionLocal
-from app.services.invitation import generate_invitation_code, calculate_expire_time
+from app.services.invitation import generate_invitation_code
 from app.crud.crud_invitation import create_invitation_code
 
 
@@ -22,8 +22,6 @@ def generate_invitations(count: int = 10, notes: str = "脚本生成"):
     codes = []
 
     try:
-        expire_at = calculate_expire_time()
-
         for i in range(count):
             code = generate_invitation_code()
 
@@ -33,7 +31,6 @@ def generate_invitations(count: int = 10, notes: str = "脚本生成"):
                 created_by=0,
                 created_by_type="admin",
                 notes=notes,
-                expire_at=expire_at
             )
 
             codes.append(code)
@@ -41,7 +38,7 @@ def generate_invitations(count: int = 10, notes: str = "脚本生成"):
 
         print("\n✅ 生成成功！")
         print(f"总计: {len(codes)} 个邀请码")
-        print(f"有效期至: {expire_at.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"邀请码永不过期")
 
         # 保存到文件
         output_file = project_root / "invitation_codes.txt"

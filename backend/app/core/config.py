@@ -39,7 +39,6 @@ class Settings(BaseSettings):
     COS_UPLOAD_PREFIX: str = "photos"
 
     INVITATION_CODE_LENGTH: int = 6
-    INVITATION_EXPIRE_DAYS: int = 7
     DEFAULT_INVITATION_QUOTA: int = 2
 
     # 审核放行邀请码
