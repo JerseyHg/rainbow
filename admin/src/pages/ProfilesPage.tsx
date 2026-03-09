@@ -12,6 +12,8 @@ const FILTER_TABS: { key: string; label: string }[] = [
   { key: 'all', label: '📋 全部' },
 ]
 
+const PAGE_SIZE = 20
+
 interface ProfilesPageProps {
   showToast: (message: string, type?: ToastType) => void
   initialFilter?: string
@@ -36,23 +38,41 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
     serial_number: string
   } | null>(null)
 
+  // Pagination state
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+
+  // Photo lightbox state
+  const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([])
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+
   // 当 initialFilter 从外部变化时同步
   useEffect(() => {
     setFilter(initialFilter)
+    setPage(1)
   }, [initialFilter])
 
   const loadProfiles = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.getProfilesByStatus(filter)
+      const res = await api.getProfilesByStatus(filter, page, PAGE_SIZE)
       setProfiles(res.data?.list || [])
+      setTotal(res.data?.total || 0)
     } catch (e: any) {
       showToast(e.message, 'error')
     }
     setLoading(false)
-  }, [showToast, filter])
+  }, [showToast, filter, page])
 
   useEffect(() => { loadProfiles() }, [loadProfiles])
+
+  // Reset to page 1 when filter changes
+  const handleFilterChange = (newFilter: string) => {
+    setFilter(newFilter)
+    setPage(1)
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   const openDetail = async (id: number) => {
     setSelectedId(id)
@@ -70,7 +90,6 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
       const data = res.data
 
       if (data?.post_url) {
-        // ★ 有 AI 文案 → 调用 generate 拿 HTML 内容
         setPostGenerating(true)
         try {
           const genRes = await api.generateAiPost(id)
@@ -87,7 +106,6 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
         }
         setPostGenerating(false)
       } else {
-        // 无 AI 文案 → 旧模板
         setPostPreview(data || null)
         setShowPost(true)
       }
@@ -184,13 +202,26 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
     setGeneratedPost(null)
   }
 
+  const openLightbox = (photos: string[], index: number) => {
+    setLightboxPhotos(photos)
+    setLightboxIndex(index)
+  }
+
+  const closeLightbox = () => {
+    setLightboxPhotos([])
+    setLightboxIndex(0)
+  }
+
+  const getPhotoUrl = (url: string) =>
+    url.startsWith('http') ? url : `${window.location.origin}${url}`
+
   return (
     <div style={{ animation: 'fadeIn 0.4s ease' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>资料管理</h2>
-          <p style={{ fontSize: 14, color: COLORS.textSec }}>共 {profiles.length} 条记录</p>
+          <p style={{ fontSize: 14, color: COLORS.textSec }}>共 {total} 条记录</p>
         </div>
         <Button variant="ghost" onClick={loadProfiles} size="sm">🔄 刷新</Button>
       </div>
@@ -202,7 +233,7 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
         {FILTER_TABS.map(tab => (
           <button
             key={tab.key}
-            onClick={() => setFilter(tab.key)}
+            onClick={() => handleFilterChange(tab.key)}
             style={{
               padding: '8px 18px',
               borderRadius: 20,
@@ -220,7 +251,7 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
         ))}
       </div>
 
-      {/* List */}
+      {/* Card Grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: COLORS.textMuted }}>
           <div style={{ animation: 'pulse 1.2s infinite', fontSize: 16 }}>加载中...</div>
@@ -228,43 +259,186 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
       ) : profiles.length === 0 ? (
         <Empty text={`暂无${FILTER_TABS.find(t => t.key === filter)?.label.slice(2) || ''}资料`} />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {profiles.map((p, i) => (
-            <Card
-              key={p.id}
-              hover
-              onClick={() => openDetail(p.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 16, padding: '18px 24px',
-                cursor: 'pointer',
-                animationDelay: `${i * 0.05}s`,
-                animation: 'slideIn 0.3s ease forwards',
-                opacity: 0,
-              }}
-            >
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, background: COLORS.accentDim,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14, fontWeight: 700, color: COLORS.accent,
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>
-                {p.serial_number || '#'}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontSize: 15, fontWeight: 600 }}>{p.name}</span>
-                  <Badge variant={p.status}>{STATUS_LABEL[p.status] || p.status}</Badge>
+        <>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: 16,
+          }}>
+            {profiles.map((p, i) => (
+              <Card
+                key={p.id}
+                hover
+                onClick={() => openDetail(p.id)}
+                style={{
+                  padding: 0,
+                  cursor: 'pointer',
+                  animationDelay: `${i * 0.03}s`,
+                  animation: 'slideIn 0.3s ease forwards',
+                  opacity: 0,
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Avatar + Basic Info Header */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px 12px',
+                }}>
+                  {/* Avatar */}
+                  <div style={{
+                    width: 56, height: 56, borderRadius: 14, overflow: 'hidden',
+                    background: COLORS.bg, border: `1px solid ${COLORS.border}`,
+                    flexShrink: 0,
+                  }}>
+                    {p.avatar ? (
+                      <img
+                        src={getPhotoUrl(p.avatar)}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        alt=""
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%', height: '100%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 700, color: COLORS.accent,
+                        background: COLORS.accentDim,
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}>
+                        {p.serial_number || '#'}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Name + Status */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{
+                        fontSize: 15, fontWeight: 700, color: COLORS.text,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>{p.name}</span>
+                      <Badge variant={p.status}>{STATUS_LABEL[p.status] || p.status}</Badge>
+                    </div>
+                    <div style={{ fontSize: 12, color: COLORS.textMuted }}>
+                      {p.serial_number || '-'}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, color: COLORS.textMuted }}>
-                  {p.gender} · {p.age}岁 · {p.work_location || '未填'}
+
+                {/* Info Grid */}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1fr',
+                  gap: 1, background: COLORS.border,
+                  borderTop: `1px solid ${COLORS.border}`,
+                }}>
+                  <div style={{ padding: '10px 18px', background: COLORS.surface }}>
+                    <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 2 }}>性别/年龄</div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: COLORS.textSec }}>
+                      {p.gender} · {p.age}岁
+                    </div>
+                  </div>
+                  <div style={{ padding: '10px 18px', background: COLORS.surface }}>
+                    <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 2 }}>工作地</div>
+                    <div style={{
+                      fontSize: 13, fontWeight: 500, color: COLORS.textSec,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {p.work_location || '-'}
+                    </div>
+                  </div>
+                  <div style={{ padding: '10px 18px', background: COLORS.surface }}>
+                    <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 2 }}>籍贯</div>
+                    <div style={{
+                      fontSize: 13, fontWeight: 500, color: COLORS.textSec,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {p.hometown || '-'}
+                    </div>
+                  </div>
+                  <div style={{ padding: '10px 18px', background: COLORS.surface }}>
+                    <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 2 }}>行业</div>
+                    <div style={{
+                      fontSize: 13, fontWeight: 500, color: COLORS.textSec,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {p.industry || '-'}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div style={{ fontSize: 12, color: COLORS.textMuted }}>
-                {p.create_time?.split(' ')[0]}
-              </div>
-            </Card>
-          ))}
-        </div>
+
+                {/* Footer */}
+                <div style={{
+                  padding: '8px 18px', fontSize: 11, color: COLORS.textMuted,
+                  borderTop: `1px solid ${COLORS.border}`,
+                  display: 'flex', justifyContent: 'flex-end',
+                }}>
+                  {p.create_time?.split(' ')[0]}
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 8, marginTop: 28, paddingTop: 20,
+              borderTop: `1px solid ${COLORS.border}`,
+            }}>
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                style={{
+                  padding: '8px 14px', borderRadius: 10, border: `1px solid ${COLORS.border}`,
+                  background: COLORS.surface, color: page <= 1 ? COLORS.textMuted : COLORS.textSec,
+                  cursor: page <= 1 ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600,
+                }}
+              >
+                ← 上一页
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => {
+                  // Show first, last, current, and neighbors
+                  if (p === 1 || p === totalPages) return true
+                  if (Math.abs(p - page) <= 2) return true
+                  return false
+                })
+                .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('ellipsis')
+                  acc.push(p)
+                  return acc
+                }, [])
+                .map((item, idx) =>
+                  item === 'ellipsis' ? (
+                    <span key={`e${idx}`} style={{ color: COLORS.textMuted, padding: '0 4px' }}>...</span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => setPage(item as number)}
+                      style={{
+                        width: 36, height: 36, borderRadius: 10, border: 'none',
+                        background: page === item ? COLORS.accent : COLORS.surface,
+                        color: page === item ? '#fff' : COLORS.textSec,
+                        cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                style={{
+                  padding: '8px 14px', borderRadius: 10, border: `1px solid ${COLORS.border}`,
+                  background: COLORS.surface, color: page >= totalPages ? COLORS.textMuted : COLORS.textSec,
+                  cursor: page >= totalPages ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600,
+                }}
+              >
+                下一页 →
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* ========== Detail Modal ========== */}
@@ -382,7 +556,7 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
               </div>
             )}
 
-            {/* Photos */}
+            {/* Photos - clickable */}
             {detail.photos && detail.photos.length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <div style={{
@@ -391,15 +565,43 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
                 }}>照片 ({detail.photos.length})</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {detail.photos.map((url, i) => (
-                    <div key={i} style={{
-                      width: 80, height: 80, borderRadius: 10, background: COLORS.bg,
-                      border: `1px solid ${COLORS.border}`, overflow: 'hidden',
-                    }}>
+                    <div
+                      key={i}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openLightbox(detail.photos!, i)
+                      }}
+                      style={{
+                        width: 80, height: 80, borderRadius: 10, background: COLORS.bg,
+                        border: `1px solid ${COLORS.border}`, overflow: 'hidden',
+                        cursor: 'pointer', transition: 'all 0.2s',
+                        position: 'relative',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.transform = 'scale(1.08)'
+                        e.currentTarget.style.borderColor = COLORS.accent
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'scale(1)'
+                        e.currentTarget.style.borderColor = COLORS.border
+                      }}
+                    >
                       <img
-                        src={url.startsWith('http') ? url : `${window.location.origin}${url}`}
+                        src={getPhotoUrl(url)}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         alt=""
                       />
+                      <div style={{
+                        position: 'absolute', inset: 0,
+                        background: 'rgba(0,0,0,0.3)', opacity: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'opacity 0.2s', color: '#fff', fontSize: 18,
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+                        onMouseLeave={e => { e.currentTarget.style.opacity = '0' }}
+                      >
+                        🔍
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -411,6 +613,7 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
               <div style={{
                 display: 'flex', gap: 12, marginTop: 24,
                 paddingTop: 20, borderTop: `1px solid ${COLORS.border}`,
+                flexWrap: 'wrap',
               }}>
                 <Button variant="ghost" onClick={() => openPost(detail.id)}>👁 预览文案</Button>
                 <Button
@@ -465,6 +668,87 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
           </div>
         )}
       </Modal>
+
+      {/* ========== Photo Lightbox ========== */}
+      {lightboxPhotos.length > 0 && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 2000,
+            background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(12px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            animation: 'fadeIn 0.2s ease',
+          }}
+          onClick={closeLightbox}
+        >
+          {/* Close button */}
+          <button
+            onClick={closeLightbox}
+            style={{
+              position: 'absolute', top: 20, right: 20, zIndex: 2010,
+              background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff',
+              width: 40, height: 40, borderRadius: 12, cursor: 'pointer',
+              fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            ✕
+          </button>
+
+          {/* Counter */}
+          <div style={{
+            position: 'absolute', top: 24, left: '50%', transform: 'translateX(-50%)',
+            color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 600,
+          }}>
+            {lightboxIndex + 1} / {lightboxPhotos.length}
+          </div>
+
+          {/* Previous button */}
+          {lightboxPhotos.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightboxIndex(i => (i - 1 + lightboxPhotos.length) % lightboxPhotos.length)
+              }}
+              style={{
+                position: 'absolute', left: 20, zIndex: 2010,
+                background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff',
+                width: 48, height: 48, borderRadius: 14, cursor: 'pointer',
+                fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              ←
+            </button>
+          )}
+
+          {/* Image */}
+          <img
+            src={getPhotoUrl(lightboxPhotos[lightboxIndex])}
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '85vw', maxHeight: '85vh', objectFit: 'contain',
+              borderRadius: 12, boxShadow: '0 8px 60px rgba(0,0,0,0.5)',
+            }}
+            alt=""
+          />
+
+          {/* Next button */}
+          {lightboxPhotos.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightboxIndex(i => (i + 1) % lightboxPhotos.length)
+              }}
+              style={{
+                position: 'absolute', right: 20, zIndex: 2010,
+                background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff',
+                width: 48, height: 48, borderRadius: 14, cursor: 'pointer',
+                fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              →
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ========== Post Preview Modal ========== */}
       <Modal
