@@ -49,11 +49,10 @@ class Settings(BaseSettings):
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD: str = "change_this_password"
 
-    # AI 自动审核（智谱 GLM）
-    AI_API_KEY: str = ""
-    AI_API_URL: str = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-    AI_API_TYPE: str = "openai"
-    AI_MODEL: str = "glm-4.7-flash"
+    # AI 自动审核（豆包）
+    DOUBAO_API_KEY: str = ""
+    DOUBAO_BASE_URL: str = "https://ark.cn-beijing.volces.com/api/v3"
+    DOUBAO_MODEL: str = "doubao-seed-2-0-lite-260215"
 
     CORS_ORIGINS: Union[List[str], str] = "*"
 
@@ -95,5 +94,6 @@ class Settings(BaseSettings):
                 return []
             return [code.strip().upper() for code in v.split(',')]
         return v
+
 
 settings = Settings()

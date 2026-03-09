@@ -33,7 +33,7 @@ def _run_ai_review_background(profile_id: int):
     from app.core.config import settings
 
     # 即使开关在数据库中，也需要 API_KEY 才有意义
-    if not settings.AI_API_KEY:
+    if not settings.DOUBAO_API_KEY:
         return
 
     db = None

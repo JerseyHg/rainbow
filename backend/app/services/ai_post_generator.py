@@ -77,8 +77,8 @@ async def _call_ai_for_post(profile_summary: str) -> Optional[Dict[str, str]]:
     调用 AI 生成公众号文案
     返回 {"title": "...", "intro": "...", "body": "...", "closing": "..."}
     """
-    if not settings.AI_API_KEY:
-        logger.warning("AI_API_KEY 未配置")
+    if not settings.DOUBAO_API_KEY:
+        logger.warning("DOUBAO_API_KEY 未配置")
         return None
 
     system_prompt = """你是一个专业的公众号文案写手，专门为彩虹社区交友平台撰写温暖、真诚的个人档案推介文案。
@@ -106,12 +106,13 @@ async def _call_ai_for_post(profile_summary: str) -> Optional[Dict[str, str]]:
 
 请生成温暖有趣的文案，让读者想要了解这个人。"""
 
+    api_url = settings.DOUBAO_BASE_URL.rstrip('/') + '/chat/completions'
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {settings.AI_API_KEY}",
+        "Authorization": f"Bearer {settings.DOUBAO_API_KEY}",
     }
     payload = {
-        "model": settings.AI_MODEL,
+        "model": settings.DOUBAO_MODEL,
         "max_tokens": 2000,
         "messages": [
             {"role": "system", "content": system_prompt},
@@ -120,30 +121,13 @@ async def _call_ai_for_post(profile_summary: str) -> Optional[Dict[str, str]]:
         "temperature": 0.7,
     }
 
-    # 智谱/OpenAI 兼容格式
-    if settings.AI_API_TYPE == "claude":
-        headers = {
-            "Content-Type": "application/json",
-            "x-api-key": settings.AI_API_KEY,
-            "anthropic-version": "2023-06-01",
-        }
-        payload = {
-            "model": settings.AI_MODEL,
-            "max_tokens": 2000,
-            "system": system_prompt,
-            "messages": [{"role": "user", "content": prompt}],
-        }
-
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(settings.AI_API_URL, headers=headers, json=payload)
+            resp = await client.post(api_url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
 
-        if settings.AI_API_TYPE == "claude":
-            text = data.get("content", [{}])[0].get("text", "")
-        else:
-            text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
         # 清理
         cleaned = text.strip()
