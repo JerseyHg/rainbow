@@ -10,7 +10,7 @@ from app.crud import crud_profile, crud_invitation
 from app.utils.helpers import generate_serial_number, calculate_age, calculate_constellation
 from app.models.invitation_code import InvitationCode
 from app.core.config import settings
-from app.services.invitation import generate_invitation_code, calculate_expire_time
+from app.services.invitation import generate_invitation_code
 import logging
 
 from app.crud.crud_settings import get_setting_bool
@@ -159,10 +159,9 @@ async def submit_profile(
         # 生成邀请码配额
         for _ in range(settings.DEFAULT_INVITATION_QUOTA):
             code = generate_invitation_code()
-            expire_at = calculate_expire_time()
             crud_invitation.create_invitation_code(
                 db=db, code=code, created_by=profile.id, created_by_type="user",
-                notes=f"用户{profile.serial_number}的邀请码（放行）", expire_at=expire_at
+                notes=f"用户{profile.serial_number}的邀请码（放行）", expire_at=None
             )
         crud_profile.update_profile(db=db, profile_id=profile.id,
                                     data={"invitation_quota": settings.DEFAULT_INVITATION_QUOTA})
