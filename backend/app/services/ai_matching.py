@@ -92,13 +92,14 @@ async def generate_embedding(text: str) -> Optional[List[float]]:
         "input": [
             {"type": "text", "text": text},
         ],
-        "encoding_format": "float",
     }
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.post(api_url, headers=headers, json=payload)
-            resp.raise_for_status()
+            if resp.status_code != 200:
+                logger.error(f"Embedding API 返回 {resp.status_code}: {resp.text}")
+                return None
             data = resp.json()
 
         embedding = data.get("data", [{}])[0].get("embedding")
@@ -110,7 +111,7 @@ async def generate_embedding(text: str) -> Optional[List[float]]:
         return embedding
 
     except Exception as e:
-        logger.error(f"Embedding API 调用失败: {e}")
+        logger.error(f"Embedding API 调用失败: {type(e).__name__}: {e}")
         return None
 
 
