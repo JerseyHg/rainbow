@@ -118,10 +118,10 @@ class ApiClient {
   async getMatchingCandidates(profileId: number): Promise<ApiResponse> {
     return this.request(`/admin/matching/candidates?profile_id=${profileId}`)
   }
-  async analyzeMatch(profileIdA: number, profileIdB: number): Promise<ApiResponse> {
+  async analyzeMatch(profileIdA: number, profileIdB: number, force = false): Promise<ApiResponse> {
     return this.request('/admin/matching/analyze', {
       method: 'POST',
-      body: JSON.stringify({ profile_id_a: profileIdA, profile_id_b: profileIdB }),
+      body: JSON.stringify({ profile_id_a: profileIdA, profile_id_b: profileIdB, force }),
     })
   }
   async generateEmbedding(profileId: number): Promise<ApiResponse> {

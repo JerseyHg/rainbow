@@ -962,6 +962,29 @@ from pydantic import BaseModel as PydanticBaseModel
 class MatchAnalyzeRequest(PydanticBaseModel):
     profile_id_a: int
     profile_id_b: int
+    force: bool = False  # 强制重新分析（忽略缓存）
+
+
+def _profile_brief(profile) -> dict:
+    """构建包含照片的用户摘要"""
+    photos = profile.photos or []
+    return {
+        "id": profile.id,
+        "name": profile.name,
+        "serial_number": profile.serial_number,
+        "gender": profile.gender,
+        "age": profile.age,
+        "height": profile.height,
+        "weight": profile.weight,
+        "work_location": profile.work_location,
+        "industry": profile.industry,
+        "photos": photos[:3],  # 最多返回3张照片
+        "avatar": photos[0] if photos else None,
+        "dating_purpose": profile.dating_purpose,
+        "mbti": profile.mbti,
+        "constellation": profile.constellation,
+        "hobbies": profile.hobbies or [],
+    }
 
 
 @router.post("/matching/analyze", response_model=ResponseModel)
@@ -970,8 +993,9 @@ async def analyze_match(
         admin: dict = Depends(get_current_admin),
         db: Session = Depends(get_db),
 ):
-    """AI 分析两个用户的匹配度"""
+    """AI 分析两个用户的匹配度（支持缓存）"""
     from app.services.ai_matching import analyze_compatibility
+    from app.models.match_analysis import MatchAnalysis as MatchAnalysisModel
 
     profile_a = crud_profile.get_profile_by_id(db, request.profile_id_a)
     profile_b = crud_profile.get_profile_by_id(db, request.profile_id_b)
@@ -981,25 +1005,63 @@ async def analyze_match(
     if not profile_b:
         raise HTTPException(status_code=404, detail=f"用户 {request.profile_id_b} 不存在")
 
-    result = await analyze_compatibility(profile_a, profile_b)
+    # 确保 a_id < b_id 统一缓存键
+    a_id = min(request.profile_id_a, request.profile_id_b)
+    b_id = max(request.profile_id_a, request.profile_id_b)
 
-    if result is None:
-        return ResponseModel(success=False, message="AI 分析失败，请稍后重试", data=None)
+    cached = None
+    if not request.force:
+        cached = db.query(MatchAnalysisModel).filter(
+            MatchAnalysisModel.profile_a_id == a_id,
+            MatchAnalysisModel.profile_b_id == b_id,
+        ).first()
+
+    if cached:
+        result = {
+            "score": cached.score,
+            "summary": cached.summary,
+            "strengths": cached.strengths or [],
+            "concerns": cached.concerns or [],
+            "analysis": cached.analysis or {},
+        }
+        from_cache = True
+    else:
+        result = await analyze_compatibility(profile_a, profile_b)
+        if result is None:
+            return ResponseModel(success=False, message="AI 分析失败，请稍后重试", data=None)
+
+        # 保存到缓存
+        existing = db.query(MatchAnalysisModel).filter(
+            MatchAnalysisModel.profile_a_id == a_id,
+            MatchAnalysisModel.profile_b_id == b_id,
+        ).first()
+        if existing:
+            existing.score = result.get("score")
+            existing.summary = result.get("summary")
+            existing.strengths = result.get("strengths")
+            existing.concerns = result.get("concerns")
+            existing.analysis = result.get("analysis")
+        else:
+            record = MatchAnalysisModel(
+                profile_a_id=a_id,
+                profile_b_id=b_id,
+                score=result.get("score"),
+                summary=result.get("summary"),
+                strengths=result.get("strengths"),
+                concerns=result.get("concerns"),
+                analysis=result.get("analysis"),
+            )
+            db.add(record)
+        db.commit()
+        from_cache = False
 
     return ResponseModel(
         success=True,
-        message="分析完成",
+        message="分析完成（缓存）" if from_cache else "分析完成",
         data={
-            "profile_a": {
-                "id": profile_a.id,
-                "name": profile_a.name,
-                "serial_number": profile_a.serial_number,
-            },
-            "profile_b": {
-                "id": profile_b.id,
-                "name": profile_b.name,
-                "serial_number": profile_b.serial_number,
-            },
+            "profile_a": _profile_brief(profile_a),
+            "profile_b": _profile_brief(profile_b),
+            "from_cache": from_cache,
             **result,
         },
     )
@@ -1047,6 +1109,7 @@ async def get_matching_candidates(
     scored.sort(key=lambda x: x["basic_score"], reverse=True)
 
     has_embedding = target.profile_embedding is not None
+    target_photos = target.photos or []
     return ResponseModel(
         success=True,
         message="获取成功",
@@ -1057,7 +1120,21 @@ async def get_matching_candidates(
                 "serial_number": target.serial_number,
                 "gender": target.gender,
                 "age": target.age,
+                "height": target.height,
+                "weight": target.weight,
                 "work_location": target.work_location,
+                "industry": target.industry,
+                "hometown": target.hometown,
+                "dating_purpose": target.dating_purpose,
+                "want_children": target.want_children,
+                "mbti": target.mbti,
+                "constellation": target.constellation,
+                "hobbies": target.hobbies or [],
+                "lifestyle": target.lifestyle,
+                "coming_out_status": target.coming_out_status,
+                "expectation": target.expectation or {},
+                "photos": target_photos,
+                "avatar": target_photos[0] if target_photos else None,
                 "has_embedding": has_embedding,
             },
             "candidates": scored[:20],

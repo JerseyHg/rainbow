@@ -68,15 +68,18 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
       .finally(() => setLoadingCandidates(false))
   }, [selectedUserId])
 
-  const handleAnalyze = async (candidate: MatchCandidate) => {
+  const handleAnalyze = async (candidate: MatchCandidate, force = false) => {
     if (!selectedUserId) return
     setAnalysisTarget(candidate)
     setAnalyzing(true)
-    setAnalysis(null)
+    if (!force) setAnalysis(null)
     try {
-      const res = await api.analyzeMatch(selectedUserId, candidate.id)
+      const res = await api.analyzeMatch(selectedUserId, candidate.id, force)
       if (res.success && res.data) {
         setAnalysis(res.data)
+        if (res.data.from_cache) {
+          showToast('已加载缓存的分析结果')
+        }
       } else {
         showToast(res.message || 'AI 分析失败', 'error')
       }
@@ -215,48 +218,117 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
         </div>
       </Card>
 
-      {/* Target User Summary */}
+      {/* Target User Detailed Card */}
       {targetUser && (
         <Card style={{ marginBottom: 24, borderLeft: `3px solid ${COLORS.accent}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 14,
-              background: COLORS.gradient, display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 16, fontWeight: 700, color: '#fff',
-              backgroundSize: '200% 200%',
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>
-              {targetUser.serial_number || '?'}
-            </div>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.text }}>
-                {targetUser.name}
+          <div style={{ display: 'flex', gap: 16 }}>
+            {/* Photos */}
+            {targetUser.photos && targetUser.photos.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                {targetUser.photos.slice(0, 3).map((p: string, i: number) => (
+                  <div key={i} style={{
+                    width: 80, height: 80, borderRadius: 12, overflow: 'hidden',
+                    border: `1px solid ${COLORS.border}`,
+                  }}>
+                    <img
+                      src={getPhotoUrl(p)}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      alt=""
+                    />
+                  </div>
+                ))}
               </div>
-              <div style={{ fontSize: 13, color: COLORS.textSec }}>
-                {targetUser.gender} · {targetUser.age}岁 · {targetUser.work_location || '-'}
-              </div>
-            </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-              {targetUser.has_embedding ? (
-                <span style={{
-                  fontSize: 11, padding: '3px 10px', borderRadius: 10,
-                  background: COLORS.successDim, color: COLORS.success, fontWeight: 600,
+            )}
+
+            {/* Info */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div style={{
+                  padding: '2px 10px', borderRadius: 8,
+                  background: COLORS.gradient, color: '#fff',
+                  fontSize: 13, fontWeight: 700,
+                  fontFamily: "'JetBrains Mono', monospace",
                 }}>
-                  Embedding 已生成
+                  {targetUser.serial_number || '?'}
+                </div>
+                <span style={{ fontSize: 17, fontWeight: 700, color: COLORS.text }}>
+                  {targetUser.name}
                 </span>
-              ) : (
-                <Button
-                  onClick={handleGenerateEmbedding}
-                  disabled={generatingEmbedding}
-                  style={{ fontSize: 12, padding: '4px 12px' }}
-                >
-                  {generatingEmbedding ? '生成中...' : '生成 Embedding'}
-                </Button>
+                {targetUser.has_embedding ? (
+                  <span style={{
+                    fontSize: 11, padding: '3px 10px', borderRadius: 10,
+                    background: COLORS.successDim, color: COLORS.success, fontWeight: 600,
+                  }}>
+                    Embedding 已生成
+                  </span>
+                ) : (
+                  <Button
+                    onClick={handleGenerateEmbedding}
+                    disabled={generatingEmbedding}
+                    style={{ fontSize: 12, padding: '4px 12px' }}
+                  >
+                    {generatingEmbedding ? '生成中...' : '生成 Embedding'}
+                  </Button>
+                )}
+                <span style={{ fontSize: 13, color: COLORS.textMuted, marginLeft: 'auto' }}>
+                  找到 {candidates.length} 位候选人
+                </span>
+              </div>
+
+              {/* Basic info row */}
+              <div style={{ fontSize: 13, color: COLORS.textSec, marginBottom: 6 }}>
+                {targetUser.gender} · {targetUser.age}岁 · {targetUser.height}cm · {targetUser.weight}kg
+                {targetUser.work_location && ` · ${targetUser.work_location}`}
+                {targetUser.industry && ` · ${targetUser.industry}`}
+                {targetUser.hometown && ` · 籍贯${targetUser.hometown}`}
+              </div>
+
+              {/* Tags row */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+                {targetUser.dating_purpose && (
+                  <span style={tagStyle(COLORS.accent)}>{targetUser.dating_purpose}</span>
+                )}
+                {targetUser.mbti && (
+                  <span style={tagStyle(COLORS.info)}>{targetUser.mbti}</span>
+                )}
+                {targetUser.constellation && (
+                  <span style={tagStyle(COLORS.info)}>{targetUser.constellation}</span>
+                )}
+                {targetUser.want_children && (
+                  <span style={tagStyle(COLORS.warning)}>孩子: {targetUser.want_children}</span>
+                )}
+                {targetUser.coming_out_status && (
+                  <span style={tagStyle(COLORS.textSec)}>{targetUser.coming_out_status}</span>
+                )}
+              </div>
+
+              {/* Hobbies */}
+              {targetUser.hobbies && targetUser.hobbies.length > 0 && (
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 4 }}>
+                  爱好: {targetUser.hobbies.join('、')}
+                </div>
               )}
-              <span style={{ fontSize: 13, color: COLORS.textMuted }}>
-                找到 {candidates.length} 位候选人
-              </span>
+
+              {/* Lifestyle */}
+              {targetUser.lifestyle && (
+                <div style={{
+                  fontSize: 12, color: COLORS.textMuted, lineHeight: 1.5,
+                  overflow: 'hidden', textOverflow: 'ellipsis',
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                }}>
+                  {targetUser.lifestyle}
+                </div>
+              )}
+
+              {/* Expectation */}
+              {targetUser.expectation && Object.keys(targetUser.expectation).length > 0 && (
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>
+                  期望: {Object.entries(targetUser.expectation)
+                    .filter(([, v]) => v && typeof v === 'string' && (v as string).trim())
+                    .map(([k, v]) => `${k}:${v}`)
+                    .join('、')}
+                </div>
+              )}
             </div>
           </div>
         </Card>
@@ -382,46 +454,171 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
         open={!!analysisTarget}
         onClose={() => { setAnalysisTarget(null); setAnalysis(null) }}
         title="AI 匹配分析"
-        width={660}
+        width={780}
       >
         {analyzing ? (
           <div style={{ textAlign: 'center', padding: 40, color: COLORS.textMuted }}>
             <div style={{ fontSize: 32, marginBottom: 12, animation: 'pulse 1.2s infinite' }}>
-              💘
+              {'\u{1F498}'}
             </div>
             <div>AI 正在分析匹配度，请稍候...</div>
           </div>
         ) : analysis ? (
           <div>
-            {/* Score Circle */}
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: 80, height: 80, borderRadius: '50%',
-                background: `${getScoreColor(analysis.score)}18`,
-                border: `3px solid ${getScoreColor(analysis.score)}`,
-              }}>
-                <span style={{
-                  fontSize: 28, fontWeight: 800,
-                  color: getScoreColor(analysis.score),
+            {/* Profile Photos Side by Side */}
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 16,
+              marginBottom: 24,
+            }}>
+              {/* Profile A */}
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{
+                  display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 8,
+                  flexWrap: 'wrap',
                 }}>
-                  {analysis.score}
-                </span>
+                  {(analysis.profile_a.photos || []).slice(0, 2).map((p, i) => (
+                    <div key={i} style={{
+                      width: 80, height: 80, borderRadius: 12, overflow: 'hidden',
+                      border: `2px solid ${COLORS.accent}`,
+                    }}>
+                      <img src={getPhotoUrl(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                    </div>
+                  ))}
+                  {(!analysis.profile_a.photos || analysis.profile_a.photos.length === 0) && (
+                    <div style={{
+                      width: 80, height: 80, borderRadius: 12,
+                      background: COLORS.accentDim, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      border: `2px solid ${COLORS.accent}`,
+                      fontSize: 24, color: COLORS.accent,
+                    }}>
+                      {analysis.profile_a.name[0]}
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>
+                  {analysis.profile_a.serial_number || '#'} {analysis.profile_a.name}
+                </div>
+                <div style={{ fontSize: 12, color: COLORS.textSec }}>
+                  {analysis.profile_a.gender} · {analysis.profile_a.age}岁 · {analysis.profile_a.height}cm
+                </div>
+                <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
+                  {[
+                    analysis.profile_a.work_location,
+                    analysis.profile_a.industry,
+                    analysis.profile_a.mbti,
+                    analysis.profile_a.constellation,
+                  ].filter(Boolean).join(' · ')}
+                </div>
+                {analysis.profile_a.hobbies && analysis.profile_a.hobbies.length > 0 && (
+                  <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
+                    {analysis.profile_a.hobbies.slice(0, 4).join('、')}
+                  </div>
+                )}
               </div>
-              <div style={{
-                fontSize: 15, color: COLORS.textSec, marginTop: 12,
-                fontWeight: 500,
-              }}>
-                {analysis.summary}
+
+              {/* Score Circle in Center */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 10, flexShrink: 0 }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 72, height: 72, borderRadius: '50%',
+                  background: `${getScoreColor(analysis.score)}18`,
+                  border: `3px solid ${getScoreColor(analysis.score)}`,
+                }}>
+                  <span style={{
+                    fontSize: 26, fontWeight: 800,
+                    color: getScoreColor(analysis.score),
+                  }}>
+                    {analysis.score}
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 6, textAlign: 'center' }}>
+                  {'\u21C4'}
+                </div>
               </div>
-              <div style={{
-                fontSize: 12, color: COLORS.textMuted, marginTop: 6,
-              }}>
-                {analysis.profile_a.serial_number || '#'} {analysis.profile_a.name}
-                {' '}⇄{' '}
-                {analysis.profile_b.serial_number || '#'} {analysis.profile_b.name}
+
+              {/* Profile B */}
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{
+                  display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 8,
+                  flexWrap: 'wrap',
+                }}>
+                  {(analysis.profile_b.photos || []).slice(0, 2).map((p, i) => (
+                    <div key={i} style={{
+                      width: 80, height: 80, borderRadius: 12, overflow: 'hidden',
+                      border: `2px solid ${COLORS.info}`,
+                    }}>
+                      <img src={getPhotoUrl(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                    </div>
+                  ))}
+                  {(!analysis.profile_b.photos || analysis.profile_b.photos.length === 0) && (
+                    <div style={{
+                      width: 80, height: 80, borderRadius: 12,
+                      background: COLORS.infoDim, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      border: `2px solid ${COLORS.info}`,
+                      fontSize: 24, color: COLORS.info,
+                    }}>
+                      {analysis.profile_b.name[0]}
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>
+                  {analysis.profile_b.serial_number || '#'} {analysis.profile_b.name}
+                </div>
+                <div style={{ fontSize: 12, color: COLORS.textSec }}>
+                  {analysis.profile_b.gender} · {analysis.profile_b.age}岁 · {analysis.profile_b.height}cm
+                </div>
+                <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
+                  {[
+                    analysis.profile_b.work_location,
+                    analysis.profile_b.industry,
+                    analysis.profile_b.mbti,
+                    analysis.profile_b.constellation,
+                  ].filter(Boolean).join(' · ')}
+                </div>
+                {analysis.profile_b.hobbies && analysis.profile_b.hobbies.length > 0 && (
+                  <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
+                    {analysis.profile_b.hobbies.slice(0, 4).join('、')}
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Summary */}
+            <div style={{
+              textAlign: 'center', marginBottom: 20,
+              fontSize: 14, color: COLORS.textSec, fontWeight: 500,
+            }}>
+              {analysis.summary}
+            </div>
+
+            {/* Cache indicator + Re-analyze button */}
+            {analysis.from_cache && (
+              <div style={{
+                textAlign: 'center', marginBottom: 16,
+              }}>
+                <span style={{
+                  fontSize: 11, color: COLORS.textMuted,
+                  padding: '3px 10px', borderRadius: 8,
+                  background: COLORS.bg, marginRight: 8,
+                }}>
+                  来自缓存
+                </span>
+                <button
+                  onClick={() => analysisTarget && handleAnalyze(analysisTarget, true)}
+                  disabled={analyzing}
+                  style={{
+                    fontSize: 12, padding: '4px 14px', borderRadius: 8,
+                    background: 'transparent', color: COLORS.accent,
+                    border: `1px solid ${COLORS.accent}`,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  重新分析
+                </button>
+              </div>
+            )}
 
             {/* Strengths & Concerns */}
             <div style={{
@@ -499,4 +696,12 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
       </Modal>
     </div>
   )
+}
+
+/** Helper: tag chip style */
+function tagStyle(color: string): React.CSSProperties {
+  return {
+    fontSize: 11, fontWeight: 600, padding: '2px 8px',
+    borderRadius: 8, background: `${color}18`, color,
+  }
 }
