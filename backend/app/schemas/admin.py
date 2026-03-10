@@ -27,3 +27,8 @@ class ApproveRequest(BaseModel):
 class RejectRequest(BaseModel):
     """审核拒绝请求"""
     reason: str
+
+
+class UpdateAdminNotesRequest(BaseModel):
+    """更新管理员备注"""
+    notes: str

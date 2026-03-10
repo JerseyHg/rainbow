@@ -84,12 +84,16 @@ class UserProfile(Base):
     # 审核信息
     reviewed_by = Column(String(50), comment="审核人")
     review_notes = Column(Text, comment="审核备注")
+    admin_notes = Column(Text, comment="管理员印象备注（可随时编辑）")
 
     # 管理员联系方式
     admin_contact = Column(String(50), default='casper_gb', comment="管理员微信")
 
     # AI 文案
     post_url = Column(Text, comment="AI生成的公众号文案COS链接")
+
+    # AI 匹配 embedding（JSON 数组存储向量）
+    profile_embedding = Column(JSON, comment="用户画像 embedding 向量")
 
     def __repr__(self):
         return f"<UserProfile(id={self.id}, serial_number={self.serial_number}, name={self.name})>"

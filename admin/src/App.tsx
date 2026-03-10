@@ -10,6 +10,7 @@ import { api } from './api'
 import type { PageKey, DashboardStats, ToastInfo, ToastType } from './types'
 import { NetworkPage } from './pages/NetworkPage'
 import { MapPage } from './pages/MapPage'
+import { MatchingPage } from './pages/MatchingPage'
 
 // 启动时从 localStorage 恢复 token
 const savedToken = localStorage.getItem('admin_token')
@@ -93,6 +94,9 @@ export default function App() {
         )}
         {page === 'map' && (
             <MapPage showToast={showToast} />
+        )}
+        {page === 'matching' && (
+            <MatchingPage showToast={showToast} />
         )}
       </div>
 

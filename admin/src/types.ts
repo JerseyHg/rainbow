@@ -68,6 +68,7 @@ export interface ProfileDetail {
   review_notes: string | null
   invitation_code_used: string | null
   admin_contact: string | null
+  admin_notes: string | null
   // ===== 新增字段 =====
   dating_purpose: string | null
   want_children: string | null
@@ -107,8 +108,42 @@ export interface DashboardStats {
   usedCodes: number
 }
 
+/** 匹配候选人 */
+export interface MatchCandidate {
+  id: number
+  name: string
+  serial_number: string | null
+  gender: string
+  age: number
+  height: number
+  weight: number
+  work_location: string | null
+  industry: string | null
+  avatar: string | null
+  dating_purpose: string | null
+  basic_score: number
+  embedding_score: number | null
+  match_reasons: string[]
+}
+
+/** AI 匹配分析结果 */
+export interface MatchAnalysis {
+  profile_a: { id: number; name: string; serial_number: string | null }
+  profile_b: { id: number; name: string; serial_number: string | null }
+  score: number
+  summary: string
+  strengths: string[]
+  concerns: string[]
+  analysis: {
+    basic_compatibility: string
+    expectation_alignment: string
+    lifestyle_compatibility: string
+    personality_fit: string
+  }
+}
+
 /** 侧边栏导航 key */
-export type PageKey = 'dashboard' | 'profiles' | 'invitations' | 'network' | 'map'
+export type PageKey = 'dashboard' | 'profiles' | 'invitations' | 'network' | 'map' | 'matching'
 
 /** Toast 类型 */
 export type ToastType = 'success' | 'error' | 'warning'

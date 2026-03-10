@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.deps import get_db, get_current_admin
 from app.core.security import verify_password, create_access_token
-from app.schemas.admin import AdminLoginRequest, AdminLoginResponse, ApproveRequest, RejectRequest
+from app.schemas.admin import AdminLoginRequest, AdminLoginResponse, ApproveRequest, RejectRequest, UpdateAdminNotesRequest
 from app.schemas.common import ResponseModel
 from app.crud import crud_admin, crud_profile, crud_invitation
 from app.services.post_generator import generate_post_content
@@ -99,6 +99,35 @@ def _generate_post_background(profile_id: int):
 
     except Exception as e:
         logger.error(f"后台生成文案失败: profile_id={profile_id}, error={e}")
+    finally:
+        if db:
+            db.close()
+        if loop:
+            loop.close()
+
+def _generate_embedding_background(profile_id: int):
+    """后台异步生成用户画像 embedding"""
+    from app.db.base import SessionLocal
+    db = None
+    loop = None
+    try:
+        db = SessionLocal()
+        profile = crud_profile.get_profile_by_id(db, profile_id)
+        if not profile:
+            return
+
+        from app.services.ai_matching import generate_profile_embedding
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        embedding = loop.run_until_complete(generate_profile_embedding(profile))
+
+        if embedding:
+            crud_profile.update_profile(db, profile_id, {"profile_embedding": embedding})
+            logger.info(f"Embedding 已生成: profile_id={profile_id}, dims={len(embedding)}")
+        else:
+            logger.warning(f"Embedding 生成失败: profile_id={profile_id}")
+    except Exception as e:
+        logger.error(f"后台生成 embedding 失败: profile_id={profile_id}, error={e}")
     finally:
         if db:
             db.close()
@@ -225,10 +254,27 @@ async def get_profile_detail(
         "reviewed_by": profile.reviewed_by,
         "review_notes": profile.review_notes,
         "invitation_code_used": profile.invitation_code_used,
-        "admin_contact": profile.admin_contact
+        "admin_contact": profile.admin_contact,
+        "admin_notes": profile.admin_notes,
     }
 
     return ResponseModel(success=True, message="获取成功", data=profile_dict)
+
+
+@router.put("/profile/{profile_id}/notes", response_model=ResponseModel)
+async def update_admin_notes(
+        profile_id: int,
+        request: UpdateAdminNotesRequest,
+        admin: dict = Depends(get_current_admin),
+        db: Session = Depends(get_db),
+):
+    """更新管理员对用户的印象备注"""
+    profile = crud_profile.get_profile_by_id(db, profile_id)
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="资料不存在")
+
+    crud_profile.update_profile(db, profile_id, {"admin_notes": request.notes})
+    return ResponseModel(success=True, message="备注已保存", data={"admin_notes": request.notes})
 
 
 @router.get("/profile/{profile_id}/preview-post", response_model=ResponseModel)
@@ -386,6 +432,8 @@ async def approve_profile(
 
     # ★ 审核通过后自动生成 AI 文案（后台异步，不阻塞响应）
     background_tasks.add_task(_generate_post_background, profile_id)
+    # ★ 审核通过后自动生成 embedding（后台异步）
+    background_tasks.add_task(_generate_embedding_background, profile_id)
 
     return ResponseModel(success=True, message="审核通过", data={"generated_codes": generated_codes})
 
@@ -902,3 +950,174 @@ async def generate_post_file(
             "serial_number": profile.serial_number,
         },
     )
+
+
+# ============================================================
+# AI 匹配度分析
+# ============================================================
+
+from pydantic import BaseModel as PydanticBaseModel
+
+
+class MatchAnalyzeRequest(PydanticBaseModel):
+    profile_id_a: int
+    profile_id_b: int
+
+
+@router.post("/matching/analyze", response_model=ResponseModel)
+async def analyze_match(
+        request: MatchAnalyzeRequest,
+        admin: dict = Depends(get_current_admin),
+        db: Session = Depends(get_db),
+):
+    """AI 分析两个用户的匹配度"""
+    from app.services.ai_matching import analyze_compatibility
+
+    profile_a = crud_profile.get_profile_by_id(db, request.profile_id_a)
+    profile_b = crud_profile.get_profile_by_id(db, request.profile_id_b)
+
+    if not profile_a:
+        raise HTTPException(status_code=404, detail=f"用户 {request.profile_id_a} 不存在")
+    if not profile_b:
+        raise HTTPException(status_code=404, detail=f"用户 {request.profile_id_b} 不存在")
+
+    result = await analyze_compatibility(profile_a, profile_b)
+
+    if result is None:
+        return ResponseModel(success=False, message="AI 分析失败，请稍后重试", data=None)
+
+    return ResponseModel(
+        success=True,
+        message="分析完成",
+        data={
+            "profile_a": {
+                "id": profile_a.id,
+                "name": profile_a.name,
+                "serial_number": profile_a.serial_number,
+            },
+            "profile_b": {
+                "id": profile_b.id,
+                "name": profile_b.name,
+                "serial_number": profile_b.serial_number,
+            },
+            **result,
+        },
+    )
+
+
+@router.get("/matching/candidates", response_model=ResponseModel)
+async def get_matching_candidates(
+        profile_id: int,
+        admin: dict = Depends(get_current_admin),
+        db: Session = Depends(get_db),
+):
+    """获取某个用户的匹配候选人列表（embedding + 规则混合排序）"""
+    from app.services.ai_matching import compute_match_score
+
+    target = crud_profile.get_profile_by_id(db, profile_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    candidates = db.query(UserProfile).filter(
+        UserProfile.id != profile_id,
+        UserProfile.status.in_(["approved", "published"]),
+    ).all()
+
+    scored = []
+    for c in candidates:
+        result = compute_match_score(target, c)
+        photos = c.photos or []
+        scored.append({
+            "id": c.id,
+            "name": c.name,
+            "serial_number": c.serial_number,
+            "gender": c.gender,
+            "age": c.age,
+            "height": c.height,
+            "weight": c.weight,
+            "work_location": c.work_location,
+            "industry": c.industry,
+            "avatar": photos[0] if photos else None,
+            "dating_purpose": c.dating_purpose,
+            "basic_score": result["score"],
+            "match_reasons": result["reasons"],
+            "embedding_score": result.get("embedding_score"),
+        })
+
+    scored.sort(key=lambda x: x["basic_score"], reverse=True)
+
+    has_embedding = target.profile_embedding is not None
+    return ResponseModel(
+        success=True,
+        message="获取成功",
+        data={
+            "target": {
+                "id": target.id,
+                "name": target.name,
+                "serial_number": target.serial_number,
+                "gender": target.gender,
+                "age": target.age,
+                "work_location": target.work_location,
+                "has_embedding": has_embedding,
+            },
+            "candidates": scored[:20],
+            "total": len(scored),
+        },
+    )
+
+
+@router.post("/matching/embedding/{profile_id}", response_model=ResponseModel)
+async def generate_profile_embedding_endpoint(
+        profile_id: int,
+        admin: dict = Depends(get_current_admin),
+        db: Session = Depends(get_db),
+):
+    """为单个用户生成 embedding 向量"""
+    from app.services.ai_matching import generate_profile_embedding
+
+    profile = crud_profile.get_profile_by_id(db, profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    embedding = await generate_profile_embedding(profile)
+    if embedding is None:
+        return ResponseModel(success=False, message="Embedding 生成失败", data=None)
+
+    crud_profile.update_profile(db, profile_id, {"profile_embedding": embedding})
+    return ResponseModel(
+        success=True,
+        message="Embedding 已生成",
+        data={"profile_id": profile_id, "dimensions": len(embedding)},
+    )
+
+
+@router.post("/matching/embedding/batch", response_model=ResponseModel)
+async def batch_generate_embeddings(
+        admin: dict = Depends(get_current_admin),
+        db: Session = Depends(get_db),
+):
+    """批量为所有已通过/已发布用户生成 embedding"""
+    from app.services.ai_matching import generate_profile_embedding
+
+    profiles = db.query(UserProfile).filter(
+        UserProfile.status.in_(["approved", "published"]),
+    ).all()
+
+    results = {"total": len(profiles), "success": 0, "failed": 0, "skipped": 0}
+
+    for p in profiles:
+        if p.profile_embedding:
+            results["skipped"] += 1
+            continue
+        try:
+            embedding = await generate_profile_embedding(p)
+            if embedding:
+                crud_profile.update_profile(db, p.id, {"profile_embedding": embedding})
+                results["success"] += 1
+            else:
+                results["failed"] += 1
+        except Exception as e:
+            logger.error(f"Embedding 生成失败 id={p.id}: {e}")
+            results["failed"] += 1
+
+    return ResponseModel(success=True, message="批量生成完成", data=results)

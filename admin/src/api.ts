@@ -92,6 +92,14 @@ class ApiClient {
     return this.request('/admin/map/users')
   }
 
+  // ========== 管理员备注 ==========
+  async updateAdminNotes(profileId: number, notes: string): Promise<ApiResponse> {
+    return this.request(`/admin/profile/${profileId}/notes`, {
+      method: 'PUT',
+      body: JSON.stringify({ notes }),
+    })
+  }
+
   // ========== AI 审核设置 ==========
   async getAiReviewStatus(): Promise<ApiResponse> {
     return this.request('/admin/settings/ai-review/status')
@@ -104,6 +112,23 @@ class ApiClient {
   }
   async batchAiReview(): Promise<ApiResponse> {
     return this.request('/admin/ai-review/batch', { method: 'POST' })
+  }
+
+  // ========== AI 匹配度 ==========
+  async getMatchingCandidates(profileId: number): Promise<ApiResponse> {
+    return this.request(`/admin/matching/candidates?profile_id=${profileId}`)
+  }
+  async analyzeMatch(profileIdA: number, profileIdB: number): Promise<ApiResponse> {
+    return this.request('/admin/matching/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ profile_id_a: profileIdA, profile_id_b: profileIdB }),
+    })
+  }
+  async generateEmbedding(profileId: number): Promise<ApiResponse> {
+    return this.request(`/admin/matching/embedding/${profileId}`, { method: 'POST' })
+  }
+  async batchGenerateEmbeddings(): Promise<ApiResponse> {
+    return this.request('/admin/matching/embedding/batch', { method: 'POST' })
   }
 
   // ========== AI 文案生成 ==========
