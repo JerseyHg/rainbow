@@ -1066,31 +1066,6 @@ async def get_matching_candidates(
     )
 
 
-@router.post("/matching/embedding/{profile_id}", response_model=ResponseModel)
-async def generate_profile_embedding_endpoint(
-        profile_id: int,
-        admin: dict = Depends(get_current_admin),
-        db: Session = Depends(get_db),
-):
-    """为单个用户生成 embedding 向量"""
-    from app.services.ai_matching import generate_profile_embedding
-
-    profile = crud_profile.get_profile_by_id(db, profile_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="用户不存在")
-
-    embedding = await generate_profile_embedding(profile)
-    if embedding is None:
-        return ResponseModel(success=False, message="Embedding 生成失败", data=None)
-
-    crud_profile.update_profile(db, profile_id, {"profile_embedding": embedding})
-    return ResponseModel(
-        success=True,
-        message="Embedding 已生成",
-        data={"profile_id": profile_id, "dimensions": len(embedding)},
-    )
-
-
 @router.post("/matching/embedding/batch", response_model=ResponseModel)
 async def batch_generate_embeddings(
         admin: dict = Depends(get_current_admin),
@@ -1121,3 +1096,28 @@ async def batch_generate_embeddings(
             results["failed"] += 1
 
     return ResponseModel(success=True, message="批量生成完成", data=results)
+
+
+@router.post("/matching/embedding/{profile_id}", response_model=ResponseModel)
+async def generate_profile_embedding_endpoint(
+        profile_id: int,
+        admin: dict = Depends(get_current_admin),
+        db: Session = Depends(get_db),
+):
+    """为单个用户生成 embedding 向量"""
+    from app.services.ai_matching import generate_profile_embedding
+
+    profile = crud_profile.get_profile_by_id(db, profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    embedding = await generate_profile_embedding(profile)
+    if embedding is None:
+        return ResponseModel(success=False, message="Embedding 生成失败", data=None)
+
+    crud_profile.update_profile(db, profile_id, {"profile_embedding": embedding})
+    return ResponseModel(
+        success=True,
+        message="Embedding 已生成",
+        data={"profile_id": profile_id, "dimensions": len(embedding)},
+    )
