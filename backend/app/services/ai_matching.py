@@ -102,7 +102,16 @@ async def generate_embedding(text: str) -> Optional[List[float]]:
                 return None
             data = resp.json()
 
-        embedding = data.get("data", [{}])[0].get("embedding")
+        # multimodal 返回 {"data": {"embedding": [...]}}
+        # 标准格式返回 {"data": [{"embedding": [...]}]}
+        raw = data.get("data")
+        if isinstance(raw, dict):
+            embedding = raw.get("embedding")
+        elif isinstance(raw, list) and len(raw) > 0:
+            embedding = raw[0].get("embedding")
+        else:
+            embedding = None
+
         if not embedding or not isinstance(embedding, list):
             logger.error(f"Embedding API 返回格式异常: {data}")
             return None
