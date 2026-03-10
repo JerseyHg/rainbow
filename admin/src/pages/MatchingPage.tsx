@@ -23,6 +23,7 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
   const [generatingEmbedding, setGeneratingEmbedding] = useState(false)
   const [batchGenerating, setBatchGenerating] = useState(false)
   const [batchAnalyzing, setBatchAnalyzing] = useState(false)
+  const [batchAnalyzingAll, setBatchAnalyzingAll] = useState(false)
 
   // AI analysis modal
   const [analyzing, setAnalyzing] = useState(false)
@@ -163,6 +164,23 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
     setBatchAnalyzing(false)
   }
 
+  const handleBatchAnalyzeAll = async () => {
+    setBatchAnalyzingAll(true)
+    try {
+      const res = await api.batchAnalyzeAll()
+      if (res.success) {
+        const d = res.data || {}
+        showToast(`全量AI分析完成：成功 ${d.success || 0}，跳过 ${d.skipped || 0}，失败 ${d.failed || 0}`)
+        if (selectedUserId) reloadCandidates(selectedUserId)
+      } else {
+        showToast(res.message || '全量分析失败', 'error')
+      }
+    } catch (e: any) {
+      showToast(e.message || '全量分析失败', 'error')
+    }
+    setBatchAnalyzingAll(false)
+  }
+
   const filteredUsers = searchText.trim()
     ? users.filter(u =>
         u.name.includes(searchText) ||
@@ -190,13 +208,22 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
             选择一位用户，查看 AI 推荐的匹配对象
           </p>
         </div>
-        <Button
-          onClick={handleBatchGenerate}
-          disabled={batchGenerating}
-          style={{ fontSize: 13, padding: '8px 16px', whiteSpace: 'nowrap' }}
-        >
-          {batchGenerating ? '批量生成中...' : '批量生成 Embedding'}
-        </Button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button
+            onClick={handleBatchAnalyzeAll}
+            disabled={batchAnalyzingAll}
+            style={{ fontSize: 13, padding: '8px 16px', whiteSpace: 'nowrap' }}
+          >
+            {batchAnalyzingAll ? '全量分析中...' : '全量生成 AI 分析'}
+          </Button>
+          <Button
+            onClick={handleBatchGenerate}
+            disabled={batchGenerating}
+            style={{ fontSize: 13, padding: '8px 16px', whiteSpace: 'nowrap' }}
+          >
+            {batchGenerating ? '批量生成中...' : '批量生成 Embedding'}
+          </Button>
+        </div>
       </div>
 
       {/* User Search/Select */}
