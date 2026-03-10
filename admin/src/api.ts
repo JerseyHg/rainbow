@@ -127,6 +127,9 @@ class ApiClient {
   async batchAnalyzeMatches(profileId: number): Promise<ApiResponse> {
     return this.request(`/admin/matching/analyze/batch?profile_id=${profileId}`, { method: 'POST' })
   }
+  async batchAnalyzeAll(): Promise<ApiResponse> {
+    return this.request('/admin/matching/analyze/batch-all', { method: 'POST' })
+  }
   async generateEmbedding(profileId: number): Promise<ApiResponse> {
     return this.request(`/admin/matching/embedding/${profileId}`, { method: 'POST' })
   }

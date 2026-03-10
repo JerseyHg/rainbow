@@ -1237,6 +1237,85 @@ async def batch_analyze_matches(
     return ResponseModel(success=True, message="批量分析完成", data=results)
 
 
+@router.post("/matching/analyze/batch-all", response_model=ResponseModel)
+async def batch_analyze_all_matches(
+        admin: dict = Depends(get_current_admin),
+        db: Session = Depends(get_db),
+):
+    """全量批量生成：为所有用户组合生成AI分析报告（跳过已缓存的）"""
+    import asyncio
+    from itertools import combinations
+    from app.services.ai_matching import analyze_compatibility
+    from app.models.match_analysis import MatchAnalysis as MatchAnalysisModel
+
+    profiles = db.query(UserProfile).filter(
+        UserProfile.status.in_(["approved", "published"]),
+    ).all()
+
+    if len(profiles) < 2:
+        return ResponseModel(success=True, message="用户不足2人，无需分析", data={"total": 0})
+
+    # 所有已缓存的配对
+    cached_rows = db.query(
+        MatchAnalysisModel.profile_a_id,
+        MatchAnalysisModel.profile_b_id,
+    ).all()
+    cached_pairs = {(r[0], r[1]) for r in cached_rows}
+
+    # 建立 id -> profile 映射
+    profile_map = {p.id: p for p in profiles}
+
+    # 生成所有组合，过滤已缓存
+    all_pairs = []
+    for a, b in combinations(sorted(profile_map.keys()), 2):
+        if (a, b) not in cached_pairs:
+            all_pairs.append((a, b))
+
+    total_pairs = len(profiles) * (len(profiles) - 1) // 2
+    results = {
+        "total_pairs": total_pairs,
+        "to_analyze": len(all_pairs),
+        "skipped": total_pairs - len(all_pairs),
+        "success": 0,
+        "failed": 0,
+    }
+
+    # 并发执行，信号量控制最大并发数为5
+    semaphore = asyncio.Semaphore(5)
+
+    async def analyze_one(a_id, b_id):
+        async with semaphore:
+            try:
+                return a_id, b_id, await analyze_compatibility(profile_map[a_id], profile_map[b_id])
+            except Exception as e:
+                logger.error(f"全量AI分析失败 a={a_id} b={b_id}: {e}")
+                return a_id, b_id, None
+
+    tasks = [analyze_one(a, b) for a, b in all_pairs]
+    completed = await asyncio.gather(*tasks)
+
+    for a_id, b_id, result in completed:
+        if result:
+            record = MatchAnalysisModel(
+                profile_a_id=a_id,
+                profile_b_id=b_id,
+                score=result.get("score"),
+                summary=result.get("summary"),
+                strengths=result.get("strengths"),
+                concerns=result.get("concerns"),
+                analysis=result.get("analysis"),
+            )
+            db.add(record)
+            results["success"] += 1
+        else:
+            results["failed"] += 1
+
+    if results["success"] > 0:
+        db.commit()
+
+    return ResponseModel(success=True, message="全量分析完成", data=results)
+
+
 @router.post("/matching/embedding/batch", response_model=ResponseModel)
 async def batch_generate_embeddings(
         admin: dict = Depends(get_current_admin),
