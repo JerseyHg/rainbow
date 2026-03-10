@@ -126,14 +126,34 @@ export interface MatchCandidate {
   match_reasons: string[]
 }
 
+/** 分析报告中的用户摘要（含照片） */
+export interface AnalysisProfileBrief {
+  id: number
+  name: string
+  serial_number: string | null
+  gender: string
+  age: number
+  height: number
+  weight: number
+  work_location: string | null
+  industry: string | null
+  photos: string[]
+  avatar: string | null
+  dating_purpose: string | null
+  mbti: string | null
+  constellation: string | null
+  hobbies: string[]
+}
+
 /** AI 匹配分析结果 */
 export interface MatchAnalysis {
-  profile_a: { id: number; name: string; serial_number: string | null }
-  profile_b: { id: number; name: string; serial_number: string | null }
+  profile_a: AnalysisProfileBrief
+  profile_b: AnalysisProfileBrief
   score: number
   summary: string
   strengths: string[]
   concerns: string[]
+  from_cache?: boolean
   analysis: {
     basic_compatibility: string
     expectation_alignment: string
