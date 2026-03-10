@@ -22,6 +22,7 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
   // Embedding
   const [generatingEmbedding, setGeneratingEmbedding] = useState(false)
   const [batchGenerating, setBatchGenerating] = useState(false)
+  const [batchAnalyzing, setBatchAnalyzing] = useState(false)
 
   // AI analysis modal
   const [analyzing, setAnalyzing] = useState(false)
@@ -77,6 +78,15 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
       const res = await api.analyzeMatch(selectedUserId, candidate.id, force)
       if (res.success && res.data) {
         setAnalysis(res.data)
+        // 用AI分析分数更新候选人列表中的分数
+        const aiScore = res.data.score
+        if (aiScore != null) {
+          setCandidates(prev => prev.map(c =>
+            c.id === candidate.id
+              ? { ...c, ai_score: aiScore, basic_score: aiScore }
+              : c
+          ))
+        }
         if (res.data.from_cache) {
           showToast('已加载缓存的分析结果')
         }
@@ -133,6 +143,24 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
       showToast(e.message || '批量生成失败', 'error')
     }
     setBatchGenerating(false)
+  }
+
+  const handleBatchAnalyze = async () => {
+    if (!selectedUserId) return
+    setBatchAnalyzing(true)
+    try {
+      const res = await api.batchAnalyzeMatches(selectedUserId)
+      if (res.success) {
+        const d = res.data || {}
+        showToast(`批量AI分析完成：成功 ${d.success || 0}，跳过 ${d.skipped || 0}，失败 ${d.failed || 0}`)
+        reloadCandidates(selectedUserId)
+      } else {
+        showToast(res.message || '批量分析失败', 'error')
+      }
+    } catch (e: any) {
+      showToast(e.message || '批量分析失败', 'error')
+    }
+    setBatchAnalyzing(false)
   }
 
   const filteredUsers = searchText.trim()
@@ -273,6 +301,15 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
                 <span style={{ fontSize: 13, color: COLORS.textMuted, marginLeft: 'auto' }}>
                   找到 {candidates.length} 位候选人
                 </span>
+                {candidates.length > 0 && (
+                  <Button
+                    onClick={handleBatchAnalyze}
+                    disabled={batchAnalyzing}
+                    style={{ fontSize: 12, padding: '4px 12px', marginLeft: 8 }}
+                  >
+                    {batchAnalyzing ? '批量分析中...' : '批量生成AI分析'}
+                  </Button>
+                )}
               </div>
 
               {/* Basic info row */}
@@ -404,16 +441,25 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
                       }}>
                         {c.basic_score}分
                       </span>
-                      {c.embedding_score != null && (
+                      {c.ai_score != null ? (
                         <span style={{
                           fontSize: 11, fontWeight: 600, padding: '2px 8px',
                           borderRadius: 8,
                           background: `${COLORS.accent}18`,
                           color: COLORS.accent,
                         }}>
-                          AI {c.embedding_score}%
+                          AI {c.ai_score}%
                         </span>
-                      )}
+                      ) : c.embedding_score != null ? (
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, padding: '2px 8px',
+                          borderRadius: 8,
+                          background: `${COLORS.textMuted}18`,
+                          color: COLORS.textMuted,
+                        }}>
+                          AI相似度 {c.embedding_score}%
+                        </span>
+                      ) : null}
                     </div>
                     <div style={{ fontSize: 12, color: COLORS.textSec }}>
                       {c.gender} · {c.age}岁 · {c.height}cm · {c.work_location || '-'}
