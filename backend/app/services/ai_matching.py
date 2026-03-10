@@ -82,14 +82,16 @@ async def generate_embedding(text: str) -> Optional[List[float]]:
         logger.warning("DOUBAO_API_KEY 未配置，跳过 embedding 生成")
         return None
 
-    api_url = settings.DOUBAO_BASE_URL.rstrip("/") + "/embeddings"
+    api_url = settings.DOUBAO_BASE_URL.rstrip("/") + "/embeddings/multimodal"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {settings.DOUBAO_API_KEY}",
     }
     payload = {
         "model": settings.DOUBAO_EMBEDDING_MODEL,
-        "input": text,
+        "input": [
+            {"type": "text", "text": text},
+        ],
         "encoding_format": "float",
     }
 
