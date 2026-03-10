@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     DOUBAO_API_KEY: str = ""
     DOUBAO_BASE_URL: str = "https://ark.cn-beijing.volces.com/api/v3"
     DOUBAO_MODEL: str = "doubao-seed-2-0-lite-260215"
+    DOUBAO_EMBEDDING_MODEL: str = "doubao-embedding-large-text-240915"
 
     CORS_ORIGINS: Union[List[str], str] = "*"
 

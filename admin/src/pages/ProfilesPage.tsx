@@ -42,6 +42,11 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
 
+  // Admin notes state
+  const [adminNotes, setAdminNotes] = useState('')
+  const [notesSaving, setNotesSaving] = useState(false)
+  const [notesChanged, setNotesChanged] = useState(false)
+
   // Photo lightbox state
   const [lightboxPhotos, setLightboxPhotos] = useState<string[]>([])
   const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -79,6 +84,8 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
     try {
       const res = await api.getProfileDetail(id)
       setDetail(res.data || null)
+      setAdminNotes(res.data?.admin_notes || '')
+      setNotesChanged(false)
     } catch (e: any) {
       showToast(e.message, 'error')
     }
@@ -90,21 +97,13 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
       const data = res.data
 
       if (data?.post_url) {
-        setPostGenerating(true)
-        try {
-          const genRes = await api.generateAiPost(id)
-          if (genRes.data) {
-            setGeneratedPost({
-              html: genRes.data.html,
-              download_url: genRes.data.download_url,
-              title: genRes.data.title,
-              serial_number: genRes.data.serial_number,
-            })
-          }
-        } catch (e: any) {
-          showToast(e.message || '加载失败', 'error')
-        }
-        setPostGenerating(false)
+        // 已有 AI 文案，直接展示，不重新生成
+        setGeneratedPost({
+          html: '',
+          download_url: data.post_url,
+          title: data.title || '文案预览',
+          serial_number: '',
+        })
       } else {
         setPostPreview(data || null)
         setShowPost(true)
@@ -200,6 +199,21 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
     setSelectedId(null)
     setDetail(null)
     setGeneratedPost(null)
+    setAdminNotes('')
+    setNotesChanged(false)
+  }
+
+  const handleSaveNotes = async () => {
+    if (!detail) return
+    setNotesSaving(true)
+    try {
+      await api.updateAdminNotes(detail.id, adminNotes)
+      showToast('备注已保存', 'success')
+      setNotesChanged(false)
+    } catch (e: any) {
+      showToast(e.message || '保存失败', 'error')
+    }
+    setNotesSaving(false)
   }
 
   const openLightbox = (photos: string[], index: number) => {
@@ -608,6 +622,42 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
               </div>
             )}
 
+            {/* Admin Notes */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{
+                fontSize: 12, color: COLORS.textMuted, marginBottom: 8,
+                fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
+              }}>管理员备注</div>
+              <textarea
+                value={adminNotes}
+                onChange={e => {
+                  setAdminNotes(e.target.value)
+                  setNotesChanged(true)
+                }}
+                placeholder="记录对这位用户的印象、备注信息..."
+                style={{
+                  width: '100%', minHeight: 80, resize: 'vertical',
+                  background: COLORS.bg, border: `1px solid ${COLORS.border}`,
+                  borderRadius: 10, padding: 12, fontSize: 14,
+                  color: COLORS.text, lineHeight: 1.6,
+                  fontFamily: 'inherit', outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {notesChanged && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                  <Button
+                    variant="soft"
+                    size="sm"
+                    onClick={handleSaveNotes}
+                    loading={notesSaving}
+                  >
+                    保存备注
+                  </Button>
+                </div>
+              )}
+            </div>
+
             {/* Action Buttons - 只有 pending 状态才显示审核按钮 */}
             {detail.status === 'pending' && (
               <div style={{
@@ -797,9 +847,9 @@ export function ProfilesPage({ showToast, initialFilter = 'pending' }: ProfilesP
       >
         {generatedPost && (
             <div>
-              {generatedPost.html && (
+              {(generatedPost.html || generatedPost.download_url) && (
                   <iframe
-                      srcDoc={generatedPost.html}
+                      {...(generatedPost.html ? { srcDoc: generatedPost.html } : { src: generatedPost.download_url! })}
                       style={{
                         width: '100%',
                         height: 500,
