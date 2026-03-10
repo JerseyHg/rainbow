@@ -1073,8 +1073,9 @@ async def get_matching_candidates(
         admin: dict = Depends(get_current_admin),
         db: Session = Depends(get_db),
 ):
-    """获取某个用户的匹配候选人列表（embedding + 规则混合排序）"""
+    """获取某个用户的匹配候选人列表（优先使用AI分析分数）"""
     from app.services.ai_matching import compute_match_score
+    from app.models.match_analysis import MatchAnalysis as MatchAnalysisModel
 
     target = crud_profile.get_profile_by_id(db, profile_id)
     if not target:
@@ -1085,10 +1086,22 @@ async def get_matching_candidates(
         UserProfile.status.in_(["approved", "published"]),
     ).all()
 
+    # 批量查询已缓存的AI分析分数
+    cached_rows = db.query(MatchAnalysisModel).filter(
+        (MatchAnalysisModel.profile_a_id == profile_id) |
+        (MatchAnalysisModel.profile_b_id == profile_id)
+    ).all()
+    # 建立 {other_id: ai_score} 映射
+    ai_score_map: dict[int, int] = {}
+    for row in cached_rows:
+        other_id = row.profile_b_id if row.profile_a_id == profile_id else row.profile_a_id
+        ai_score_map[other_id] = row.score
+
     scored = []
     for c in candidates:
         result = compute_match_score(target, c)
         photos = c.photos or []
+        ai_score = ai_score_map.get(c.id)
         scored.append({
             "id": c.id,
             "name": c.name,
@@ -1101,9 +1114,10 @@ async def get_matching_candidates(
             "industry": c.industry,
             "avatar": photos[0] if photos else None,
             "dating_purpose": c.dating_purpose,
-            "basic_score": result["score"],
+            "basic_score": ai_score if ai_score is not None else result["score"],
             "match_reasons": result["reasons"],
             "embedding_score": result.get("embedding_score"),
+            "ai_score": ai_score,
         })
 
     scored.sort(key=lambda x: x["basic_score"], reverse=True)
@@ -1141,6 +1155,86 @@ async def get_matching_candidates(
             "total": len(scored),
         },
     )
+
+
+@router.post("/matching/analyze/batch", response_model=ResponseModel)
+async def batch_analyze_matches(
+        profile_id: int,
+        admin: dict = Depends(get_current_admin),
+        db: Session = Depends(get_db),
+):
+    """批量为目标用户的所有候选人生成AI分析报告（跳过已缓存的）"""
+    from app.services.ai_matching import analyze_compatibility
+    from app.models.match_analysis import MatchAnalysis as MatchAnalysisModel
+
+    target = crud_profile.get_profile_by_id(db, profile_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    candidates = db.query(UserProfile).filter(
+        UserProfile.id != profile_id,
+        UserProfile.status.in_(["approved", "published"]),
+    ).all()
+
+    # 查询已缓存的分析
+    cached_rows = db.query(MatchAnalysisModel).filter(
+        (MatchAnalysisModel.profile_a_id == profile_id) |
+        (MatchAnalysisModel.profile_b_id == profile_id)
+    ).all()
+    cached_pairs = set()
+    for row in cached_rows:
+        cached_pairs.add((row.profile_a_id, row.profile_b_id))
+
+    # 过滤出需要分析的候选人
+    to_analyze = []
+    skipped = 0
+    for c in candidates:
+        a_id = min(profile_id, c.id)
+        b_id = max(profile_id, c.id)
+        if (a_id, b_id) in cached_pairs:
+            skipped += 1
+        else:
+            to_analyze.append(c)
+
+    results = {"total": len(candidates), "success": 0, "skipped": skipped, "failed": 0}
+
+    # 并发执行AI分析，信号量控制最大并发数为5
+    import asyncio
+    semaphore = asyncio.Semaphore(5)
+
+    async def analyze_one(candidate):
+        async with semaphore:
+            try:
+                return candidate, await analyze_compatibility(target, candidate)
+            except Exception as e:
+                logger.error(f"批量AI分析失败 target={profile_id} candidate={candidate.id}: {e}")
+                return candidate, None
+
+    tasks = [analyze_one(c) for c in to_analyze]
+    completed = await asyncio.gather(*tasks)
+
+    for candidate, result in completed:
+        if result:
+            a_id = min(profile_id, candidate.id)
+            b_id = max(profile_id, candidate.id)
+            record = MatchAnalysisModel(
+                profile_a_id=a_id,
+                profile_b_id=b_id,
+                score=result.get("score"),
+                summary=result.get("summary"),
+                strengths=result.get("strengths"),
+                concerns=result.get("concerns"),
+                analysis=result.get("analysis"),
+            )
+            db.add(record)
+            results["success"] += 1
+        else:
+            results["failed"] += 1
+
+    if results["success"] > 0:
+        db.commit()
+
+    return ResponseModel(success=True, message="批量分析完成", data=results)
 
 
 @router.post("/matching/embedding/batch", response_model=ResponseModel)

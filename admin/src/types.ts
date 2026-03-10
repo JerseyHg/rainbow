@@ -123,6 +123,7 @@ export interface MatchCandidate {
   dating_purpose: string | null
   basic_score: number
   embedding_score: number | null
+  ai_score: number | null
   match_reasons: string[]
 }
 
