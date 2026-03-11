@@ -29,7 +29,13 @@ class ApiClient {
 
     const res = await fetch(`${API_BASE}${url}`, { ...options, headers })
     if (res.status === 401) { this.token = null; throw new Error('AUTH_EXPIRED') }
-    const data = await res.json()
+    const text = await res.text()
+    let data: any
+    try {
+      data = JSON.parse(text)
+    } catch {
+      throw new Error(res.ok ? '服务器返回了非JSON响应' : `服务器错误 (${res.status})，请求可能超时`)
+    }
     if (!res.ok) throw new Error(data.detail || data.message || '请求失败')
     return data as T
   }
