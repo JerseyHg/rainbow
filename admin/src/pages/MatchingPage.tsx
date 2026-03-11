@@ -148,12 +148,16 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
 
   const [batchAnalyzeProgress, setBatchAnalyzeProgress] = useState('')
 
-  // 逐个候选人调用单次分析接口（避免 batch 接口超时）
-  const analyzeCandidatesOneByOne = async (targetId: number, candidateList: { id: number; name: string }[]) => {
-    let success = 0, skipped = 0, failed = 0
-    for (let i = 0; i < candidateList.length; i++) {
-      const c = candidateList[i]
-      setBatchAnalyzeProgress(`(${i + 1}/${candidateList.length}) ${c.name}`)
+  // 并发分析候选人（前端 10 并发工作池）
+  const analyzeCandidatesConcurrent = async (
+    targetId: number,
+    candidateList: { id: number; name: string }[],
+    concurrency = 10,
+  ) => {
+    let success = 0, skipped = 0, failed = 0, done = 0
+    const total = candidateList.length
+
+    const runOne = async (c: { id: number; name: string }) => {
       try {
         const res = await api.analyzeMatch(targetId, c.id)
         if (res.success && res.data) {
@@ -165,7 +169,20 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
       } catch {
         failed += 1
       }
+      done += 1
+      setBatchAnalyzeProgress(`(${done}/${total})`)
     }
+
+    // 工作池：N 个 worker 从队列消费
+    const queue = [...candidateList]
+    const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+      while (queue.length > 0) {
+        const item = queue.shift()!
+        await runOne(item)
+      }
+    })
+    await Promise.all(workers)
+
     return { success, skipped, failed }
   }
 
@@ -173,7 +190,7 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
     if (!selectedUserId) return
     setBatchAnalyzing(true)
     try {
-      const result = await analyzeCandidatesOneByOne(selectedUserId, candidates)
+      const result = await analyzeCandidatesConcurrent(selectedUserId, candidates)
       showToast(`批量AI分析完成：成功 ${result.success}，跳过 ${result.skipped}，失败 ${result.failed}`)
       reloadCandidates(selectedUserId)
     } catch (e: any) {
@@ -187,27 +204,57 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
     setBatchAnalyzingAll(true)
     let totalSuccess = 0, totalSkipped = 0, totalFailed = 0
     try {
+      // 收集所有需要分析的配对
+      type Pair = { targetId: number; candidateId: number; name: string }
+      const allPairs: Pair[] = []
+      const seen = new Set<string>()
+
       for (let i = 0; i < users.length; i++) {
-        const u = users[i]
-        setBatchAnalyzeProgress(`用户 ${i + 1}/${users.length} ${u.name}`)
-        // 先获取该用户的候选人列表
+        setBatchAnalyzeProgress(`获取候选人 ${i + 1}/${users.length}`)
         try {
-          const candidatesRes = await api.getMatchingCandidates(u.id)
+          const candidatesRes = await api.getMatchingCandidates(users[i].id)
           const cList = candidatesRes.data?.candidates || []
-          // 只分析还没有 ai_score 的
-          const toAnalyze = cList.filter((c: any) => c.ai_score == null)
-          if (toAnalyze.length === 0) {
-            totalSkipped += cList.length
-            continue
+          for (const c of cList) {
+            if (c.ai_score != null) { totalSkipped += 1; continue }
+            const key = [Math.min(users[i].id, c.id), Math.max(users[i].id, c.id)].join('-')
+            if (seen.has(key)) { totalSkipped += 1; continue }
+            seen.add(key)
+            allPairs.push({ targetId: users[i].id, candidateId: c.id, name: c.name })
           }
-          const result = await analyzeCandidatesOneByOne(u.id, toAnalyze)
-          totalSuccess += result.success
-          totalSkipped += result.skipped + (cList.length - toAnalyze.length)
-          totalFailed += result.failed
         } catch {
           totalFailed += 1
         }
       }
+
+      // 10 并发分析所有去重后的配对
+      let done = 0
+      const total = allPairs.length
+      const queue = [...allPairs]
+
+      const runOne = async (pair: Pair) => {
+        try {
+          const res = await api.analyzeMatch(pair.targetId, pair.candidateId)
+          if (res.success && res.data) {
+            if (res.data.from_cache) totalSkipped += 1
+            else totalSuccess += 1
+          } else {
+            totalFailed += 1
+          }
+        } catch {
+          totalFailed += 1
+        }
+        done += 1
+        setBatchAnalyzeProgress(`分析中 (${done}/${total})`)
+      }
+
+      const workers = Array.from({ length: Math.min(10, queue.length) }, async () => {
+        while (queue.length > 0) {
+          const item = queue.shift()!
+          await runOne(item)
+        }
+      })
+      await Promise.all(workers)
+
       showToast(`全量AI分析完成：成功 ${totalSuccess}，跳过 ${totalSkipped}，失败 ${totalFailed}`)
       if (selectedUserId) reloadCandidates(selectedUserId)
     } catch (e: any) {
