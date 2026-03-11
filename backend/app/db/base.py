@@ -11,9 +11,9 @@ from app.core.config import settings
 engine = create_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
-    pool_size=10,           # 连接池大小
-    max_overflow=20,        # 超出 pool_size 后最多再建 20 个
-    pool_timeout=30,        # 等待可用连接的最大秒数
+    pool_size=30,           # 连接池大小
+    max_overflow=70,        # 超出 pool_size 后最多再建 70 个（总计100）
+    pool_timeout=60,        # 等待可用连接的最大秒数
     pool_recycle=1800,      # 每 30 分钟回收连接，防止被 PG 断开
     pool_pre_ping=True,     # 使用前先 ping，自动剔除断开的连接
 )
