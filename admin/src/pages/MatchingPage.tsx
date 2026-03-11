@@ -146,40 +146,64 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
     setBatchGenerating(false)
   }
 
+  const [batchAnalyzeProgress, setBatchAnalyzeProgress] = useState('')
+
+  // 逐个候选人调用单次分析接口（避免 batch 接口超时）
+  const analyzeCandidatesOneByOne = async (targetId: number, candidateList: { id: number; name: string }[]) => {
+    let success = 0, skipped = 0, failed = 0
+    for (let i = 0; i < candidateList.length; i++) {
+      const c = candidateList[i]
+      setBatchAnalyzeProgress(`(${i + 1}/${candidateList.length}) ${c.name}`)
+      try {
+        const res = await api.analyzeMatch(targetId, c.id)
+        if (res.success && res.data) {
+          if (res.data.from_cache) skipped += 1
+          else success += 1
+        } else {
+          failed += 1
+        }
+      } catch {
+        failed += 1
+      }
+    }
+    return { success, skipped, failed }
+  }
+
   const handleBatchAnalyze = async () => {
     if (!selectedUserId) return
     setBatchAnalyzing(true)
     try {
-      const res = await api.batchAnalyzeMatches(selectedUserId)
-      if (res.success) {
-        const d = res.data || {}
-        showToast(`批量AI分析完成：成功 ${d.success || 0}，跳过 ${d.skipped || 0}，失败 ${d.failed || 0}`)
-        reloadCandidates(selectedUserId)
-      } else {
-        showToast(res.message || '批量分析失败', 'error')
-      }
+      const result = await analyzeCandidatesOneByOne(selectedUserId, candidates)
+      showToast(`批量AI分析完成：成功 ${result.success}，跳过 ${result.skipped}，失败 ${result.failed}`)
+      reloadCandidates(selectedUserId)
     } catch (e: any) {
       showToast(e.message || '批量分析失败', 'error')
     }
     setBatchAnalyzing(false)
+    setBatchAnalyzeProgress('')
   }
 
-  const [batchAllProgress, setBatchAllProgress] = useState('')
   const handleBatchAnalyzeAll = async () => {
     setBatchAnalyzingAll(true)
     let totalSuccess = 0, totalSkipped = 0, totalFailed = 0
     try {
-      // 逐个用户调用 batch 接口，避免单次请求超时
       for (let i = 0; i < users.length; i++) {
         const u = users[i]
-        setBatchAllProgress(`(${i + 1}/${users.length}) ${u.name}`)
+        setBatchAnalyzeProgress(`用户 ${i + 1}/${users.length} ${u.name}`)
+        // 先获取该用户的候选人列表
         try {
-          const res = await api.batchAnalyzeMatches(u.id)
-          if (res.success && res.data) {
-            totalSuccess += res.data.success || 0
-            totalSkipped += res.data.skipped || 0
-            totalFailed += res.data.failed || 0
+          const candidatesRes = await api.getMatchingCandidates(u.id)
+          const cList = candidatesRes.data?.candidates || []
+          // 只分析还没有 ai_score 的
+          const toAnalyze = cList.filter((c: any) => c.ai_score == null)
+          if (toAnalyze.length === 0) {
+            totalSkipped += cList.length
+            continue
           }
+          const result = await analyzeCandidatesOneByOne(u.id, toAnalyze)
+          totalSuccess += result.success
+          totalSkipped += result.skipped + (cList.length - toAnalyze.length)
+          totalFailed += result.failed
         } catch {
           totalFailed += 1
         }
@@ -190,7 +214,7 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
       showToast(e.message || '全量分析失败', 'error')
     }
     setBatchAnalyzingAll(false)
-    setBatchAllProgress('')
+    setBatchAnalyzeProgress('')
   }
 
   const filteredUsers = searchText.trim()
@@ -226,7 +250,7 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
             disabled={batchAnalyzingAll}
             style={{ fontSize: 13, padding: '8px 16px', whiteSpace: 'nowrap' }}
           >
-            {batchAnalyzingAll ? `全量分析中${batchAllProgress ? ' ' + batchAllProgress : '...'}` : '全量生成 AI 分析'}
+            {batchAnalyzingAll ? `全量分析中 ${batchAnalyzeProgress || '...'}` : '全量生成 AI 分析'}
           </Button>
           <Button
             onClick={handleBatchGenerate}
@@ -346,7 +370,7 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
                     disabled={batchAnalyzing}
                     style={{ fontSize: 12, padding: '4px 12px', marginLeft: 8 }}
                   >
-                    {batchAnalyzing ? '批量分析中...' : '批量生成AI分析'}
+                    {batchAnalyzing ? `分析中 ${batchAnalyzeProgress || '...'}` : '批量生成AI分析'}
                   </Button>
                 )}
               </div>
