@@ -148,11 +148,11 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
 
   const [batchAnalyzeProgress, setBatchAnalyzeProgress] = useState('')
 
-  // 并发分析候选人（前端 100 并发工作池）
+  // 并发分析候选人（前端 20 并发工作池）
   const analyzeCandidatesConcurrent = async (
     targetId: number,
     candidateList: { id: number; name: string }[],
-    concurrency = 100,
+    concurrency = 20,
   ) => {
     let success = 0, skipped = 0, failed = 0, done = 0
     const total = candidateList.length
@@ -204,29 +204,18 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
     setBatchAnalyzingAll(true)
     let totalSuccess = 0, totalSkipped = 0, totalFailed = 0
     try {
-      // 收集所有需要分析的配对
-      type Pair = { targetId: number; candidateId: number; name: string }
+      // 直接用 users 列表生成 C(N,2) 全组合，不再逐个调 getMatchingCandidates
+      type Pair = { targetId: number; candidateId: number }
       const allPairs: Pair[] = []
-      const seen = new Set<string>()
-
       for (let i = 0; i < users.length; i++) {
-        setBatchAnalyzeProgress(`获取候选人 ${i + 1}/${users.length}`)
-        try {
-          const candidatesRes = await api.getMatchingCandidates(users[i].id)
-          const cList = candidatesRes.data?.candidates || []
-          for (const c of cList) {
-            if (c.ai_score != null) { totalSkipped += 1; continue }
-            const key = [Math.min(users[i].id, c.id), Math.max(users[i].id, c.id)].join('-')
-            if (seen.has(key)) { totalSkipped += 1; continue }
-            seen.add(key)
-            allPairs.push({ targetId: users[i].id, candidateId: c.id, name: c.name })
-          }
-        } catch {
-          totalFailed += 1
+        for (let j = i + 1; j < users.length; j++) {
+          allPairs.push({ targetId: users[i].id, candidateId: users[j].id })
         }
       }
 
-      // 100 并发分析所有去重后的配对
+      setBatchAnalyzeProgress(`共 ${allPairs.length} 对，开始分析...`)
+
+      // 20 并发分析所有配对
       let done = 0
       const total = allPairs.length
       const queue = [...allPairs]
@@ -247,7 +236,7 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
         setBatchAnalyzeProgress(`分析中 (${done}/${total})`)
       }
 
-      const workers = Array.from({ length: Math.min(100, queue.length) }, async () => {
+      const workers = Array.from({ length: Math.min(20, queue.length) }, async () => {
         while (queue.length > 0) {
           const item = queue.shift()!
           await runOne(item)
