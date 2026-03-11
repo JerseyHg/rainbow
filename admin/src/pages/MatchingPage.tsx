@@ -164,21 +164,33 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
     setBatchAnalyzing(false)
   }
 
+  const [batchAllProgress, setBatchAllProgress] = useState('')
   const handleBatchAnalyzeAll = async () => {
     setBatchAnalyzingAll(true)
+    let totalSuccess = 0, totalSkipped = 0, totalFailed = 0
     try {
-      const res = await api.batchAnalyzeAll()
-      if (res.success) {
-        const d = res.data || {}
-        showToast(`全量AI分析完成：成功 ${d.success || 0}，跳过 ${d.skipped || 0}，失败 ${d.failed || 0}`)
-        if (selectedUserId) reloadCandidates(selectedUserId)
-      } else {
-        showToast(res.message || '全量分析失败', 'error')
+      // 逐个用户调用 batch 接口，避免单次请求超时
+      for (let i = 0; i < users.length; i++) {
+        const u = users[i]
+        setBatchAllProgress(`(${i + 1}/${users.length}) ${u.name}`)
+        try {
+          const res = await api.batchAnalyzeMatches(u.id)
+          if (res.success && res.data) {
+            totalSuccess += res.data.success || 0
+            totalSkipped += res.data.skipped || 0
+            totalFailed += res.data.failed || 0
+          }
+        } catch {
+          totalFailed += 1
+        }
       }
+      showToast(`全量AI分析完成：成功 ${totalSuccess}，跳过 ${totalSkipped}，失败 ${totalFailed}`)
+      if (selectedUserId) reloadCandidates(selectedUserId)
     } catch (e: any) {
       showToast(e.message || '全量分析失败', 'error')
     }
     setBatchAnalyzingAll(false)
+    setBatchAllProgress('')
   }
 
   const filteredUsers = searchText.trim()
@@ -214,7 +226,7 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
             disabled={batchAnalyzingAll}
             style={{ fontSize: 13, padding: '8px 16px', whiteSpace: 'nowrap' }}
           >
-            {batchAnalyzingAll ? '全量分析中...' : '全量生成 AI 分析'}
+            {batchAnalyzingAll ? `全量分析中${batchAllProgress ? ' ' + batchAllProgress : '...'}` : '全量生成 AI 分析'}
           </Button>
           <Button
             onClick={handleBatchGenerate}
