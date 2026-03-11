@@ -148,11 +148,11 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
 
   const [batchAnalyzeProgress, setBatchAnalyzeProgress] = useState('')
 
-  // 并发分析候选人（前端 100 并发工作池）
+  // 并发分析候选人（前端 20 并发工作池）
   const analyzeCandidatesConcurrent = async (
     targetId: number,
     candidateList: { id: number; name: string }[],
-    concurrency = 100,
+    concurrency = 20,
   ) => {
     let success = 0, skipped = 0, failed = 0, done = 0
     const total = candidateList.length
@@ -226,7 +226,7 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
         }
       }
 
-      // 100 并发分析所有去重后的配对
+      // 20 并发分析所有去重后的配对
       let done = 0
       const total = allPairs.length
       const queue = [...allPairs]
@@ -247,7 +247,7 @@ export function MatchingPage({ showToast }: MatchingPageProps) {
         setBatchAnalyzeProgress(`分析中 (${done}/${total})`)
       }
 
-      const workers = Array.from({ length: Math.min(100, queue.length) }, async () => {
+      const workers = Array.from({ length: Math.min(20, queue.length) }, async () => {
         while (queue.length > 0) {
           const item = queue.shift()!
           await runOne(item)
